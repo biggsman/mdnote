@@ -1,0 +1,166 @@
+:root {
+  --bg: #ffffff;
+  --fg: #333333;
+  --muted: #8a8f98;
+  --sidebar-bg: #f5f6f8;
+  --sidebar-border: #e3e5e8;
+  --hover: #e8eaee;
+  --active: #dbe6fb;
+  --accent: #3b78e7;
+  --status-bg: #fafafa;
+  font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1e1f22;
+  --fg: #d4d6db;
+  --muted: #868a93;
+  --sidebar-bg: #25262a;
+  --sidebar-border: #34363b;
+  --hover: #303237;
+  --active: #2f3f5c;
+  --accent: #6ea0ff;
+  --status-bg: #232428;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ---------- 사이드바 ---------- */
+#sidebar {
+  width: 260px;
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  font-size: 13px;
+  user-select: none;
+}
+
+#app.sidebar-hidden #sidebar { display: none; }
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.folder-name {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.icon-btn, .text-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  font: inherit;
+}
+.icon-btn { padding: 2px 6px; }
+.icon-btn:hover, .text-btn:hover { background: var(--hover); }
+.text-btn { padding: 6px 10px; color: var(--accent); }
+
+.tree {
+  flex: 1;
+  overflow: auto;
+  padding: 6px 0;
+}
+
+.tree-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-item:hover { background: var(--hover); }
+.tree-item.active { background: var(--active); }
+.tree-item .caret {
+  display: inline-block;
+  width: 12px;
+  color: var(--muted);
+  transition: transform 0.1s;
+}
+.tree-dir.collapsed > ul { display: none; }
+.tree-dir:not(.collapsed) > .tree-item .caret { transform: rotate(90deg); }
+.tree-item .label { overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 편집기 ---------- */
+#main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#vditor {
+  flex: 1;
+  min-height: 0;
+}
+
+.vditor {
+  border: none !important;
+}
+
+.vditor-toolbar { display: none !important; }
+
+.vditor-reset {
+  font-size: 16px !important;
+  line-height: 1.75;
+}
+
+#statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 24px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--status-bg);
+  border-top: 1px solid var(--sidebar-border);
+  user-select: none;
+}
+#statusbar .spacer { flex: 1; }
+#status-path {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#status-dirty { color: #d9822b; }
+#status-mode { cursor: pointer; }
