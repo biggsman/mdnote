@@ -100,9 +100,19 @@ function getValue() {
   return state.vditor ? state.vditor.getValue() : "";
 }
 
+/** 마지막 저장 이후 실제로 바뀐 내용이 있는지 확인한다. */
+function computeDirty() {
+  const value = getValue();
+  // 저장한 적 없는 새 문서가 비어 있으면 저장할 내용이 없다.
+  if (!state.filePath && value.trim() === "") return false;
+  // Vditor 가 끝에 붙이는 줄바꿈 차이는 변경으로 보지 않는다.
+  const trimEnd = (s) => s.replace(/\s+$/, "");
+  return trimEnd(value) !== trimEnd(state.savedContent);
+}
+
 /** 현재 내용과 마지막 저장 내용을 비교해 '저장 안 됨' 상태를 갱신한다. */
 function refreshDirty() {
-  const dirty = getValue() !== state.savedContent;
+  const dirty = computeDirty();
   if (dirty !== state.dirty) {
     state.dirty = dirty;
     updateTitle();
@@ -139,7 +149,7 @@ async function toggleMode() {
   await createEditor(value);
   // 모드 전환에 따른 정규화 차이만으로 '수정됨'이 되지 않도록 한다.
   if (!wasDirty) state.savedContent = getValue();
-  else state.dirty = getValue() !== state.savedContent;
+  else state.dirty = computeDirty();
   updateTitle();
   state.vditor.focus();
 }
@@ -241,7 +251,7 @@ async function writeTo(path) {
   await invoke("write_file", { path, content });
   state.filePath = path;
   state.savedContent = content;
-  state.dirty = getValue() !== content;
+  state.dirty = computeDirty();
   updateTitle();
 }
 
