@@ -15,6 +15,10 @@ const MD_FILTERS = [
 const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
 const FOLDER_KEY = "mdnote.folder";
 const SIDEBAR_KEY = "mdnote.sidebarHidden";
+const SIDEBAR_WIDTH_KEY = "mdnote.sidebarWidth";
+const SIDEBAR_DEFAULT_WIDTH = 180;
+const SIDEBAR_MIN_WIDTH = 120;
+const SIDEBAR_MAX_WIDTH = 480;
 
 const state = {
   vditor: null,
@@ -310,7 +314,7 @@ function renderTree(root) {
   if (!root) {
     nameEl.textContent = "폴더 없음";
     nameEl.title = "";
-    treeEl.innerHTML = `<div class="tree-empty"><p>열린 폴더가 없습니다.</p><button class="text-btn" data-action="open-folder">폴더 열기 (Ctrl+Shift+O)</button></div>`;
+    treeEl.innerHTML = `<div class="tree-empty"><p>열린 폴더가 없습니다.</p><button class="text-btn" data-action="open-folder">폴더 열기<br />(Ctrl+Shift+O)</button></div>`;
     return;
   }
   nameEl.textContent = root.name;
@@ -367,6 +371,35 @@ function highlightActive() {
 function setSidebarHidden(hidden) {
   $("app").classList.toggle("sidebar-hidden", hidden);
   storageSet(SIDEBAR_KEY, hidden ? "1" : null);
+}
+
+function setSidebarWidth(width, persist = true) {
+  const w = Math.round(Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width)));
+  document.documentElement.style.setProperty("--sidebar-width", `${w}px`);
+  if (persist) storageSet(SIDEBAR_WIDTH_KEY, w === SIDEBAR_DEFAULT_WIDTH ? null : String(w));
+}
+
+function bindSidebarResizer() {
+  const handle = $("sidebar-resizer");
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    $("app").classList.add("resizing");
+    const left = $("sidebar").getBoundingClientRect().left;
+    const onMove = (ev) => setSidebarWidth(ev.clientX - left, false);
+    const onUp = (ev) => {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+      $("app").classList.remove("resizing");
+      setSidebarWidth(ev.clientX - left);
+    };
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+  });
+  handle.addEventListener("dblclick", () => setSidebarWidth(SIDEBAR_DEFAULT_WIDTH));
 }
 
 function toggleSidebar() {
@@ -482,6 +515,9 @@ function bindEvents() {
 async function init() {
   document.documentElement.dataset.theme = isDark() ? "dark" : "light";
   if (storageGet(SIDEBAR_KEY) === "1") setSidebarHidden(true);
+  const savedWidth = Number(storageGet(SIDEBAR_WIDTH_KEY));
+  if (savedWidth) setSidebarWidth(savedWidth, false);
+  bindSidebarResizer();
   bindEvents();
   await createEditor("");
   updateTitle();
