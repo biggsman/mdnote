@@ -3,6 +3,7 @@ import "vditor/dist/index.css";
 import "./style.css";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plugin-dialog";
 
@@ -221,10 +222,22 @@ function exclusive(fn) {
   };
 }
 
+/** 새 문서는 새 창으로 연다. 각 창은 독립된 편집기다. */
 async function newDocument() {
-  if (!(await confirmDiscard())) return;
-  state.filePath = null;
-  setContent("");
+  if (!isTauri()) {
+    window.open(location.href, "_blank");
+    return;
+  }
+  const size = await appWindow.innerSize().then((s) => s.toLogical(window.devicePixelRatio)).catch(() => null);
+  const win = new WebviewWindow(`doc-${Date.now()}`, {
+    url: "index.html",
+    title: "MdNote",
+    width: size?.width ?? 1100,
+    height: size?.height ?? 760,
+    minWidth: 480,
+    minHeight: 320,
+  });
+  win.once("tauri://error", (e) => showError(`새 창을 열 수 없습니다: ${e.payload}`));
 }
 
 async function loadFile(path) {
@@ -458,6 +471,7 @@ function bindEvents() {
 
   $("btn-folder").addEventListener("click", () => actions.openFolder());
   $("btn-refresh").addEventListener("click", () => refreshTree());
+  $("btn-new").addEventListener("click", () => actions.newDocument());
   $("status-mode").addEventListener("click", () => actions.toggleMode());
 
   $("tree").addEventListener("click", (e) => {
@@ -524,7 +538,8 @@ async function init() {
 
   if (!isTauri()) return;
 
-  const startupFile = await invoke("get_startup_file").catch(() => null);
+  // 탐색기에서 더블클릭한 파일은 처음 뜨는 메인 창에서만 연다.
+  const startupFile = appWindow.label === "main" ? await invoke("get_startup_file").catch(() => null) : null;
   const savedFolder = storageGet(FOLDER_KEY);
   const folder = savedFolder ?? (startupFile ? dirname(startupFile) : null);
   if (folder) {
