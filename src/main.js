@@ -5,7 +5,9 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plugin-dialog";
+import { installMenu } from "./menu.js";
 
 // scripts/copy-vditor.mjs 가 node_modules/vditor/dist 를 public/vditor/dist 로 복사한다.
 const VDITOR_CDN = "/vditor";
@@ -16,6 +18,7 @@ const MD_FILTERS = [
 const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
 const FOLDER_KEY = "mdnote.folder";
 const SIDEBAR_KEY = "mdnote.sidebarHidden";
+const THEME_KEY = "mdnote.theme"; // "system" | "light" | "dark"
 const SIDEBAR_WIDTH_KEY = "mdnote.sidebarWidth";
 const SIDEBAR_DEFAULT_WIDTH = 180;
 const SIDEBAR_MIN_WIDTH = 120;
@@ -30,6 +33,8 @@ const state = {
   folder: null,
   expanded: new Set(),
   busy: false,
+  /** 메뉴의 체크 표시를 맞추는 함수들 (Tauri 창에서만) */
+  menu: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -58,8 +63,20 @@ function storageSet(key, value) {
 
 /* ---------------- 편집기 ---------------- */
 
+function themePref() {
+  const t = storageGet(THEME_KEY);
+  return t === "light" || t === "dark" ? t : "system";
+}
+
 function isDark() {
-  return darkQuery.matches;
+  const pref = themePref();
+  return pref === "dark" || (pref === "system" && darkQuery.matches);
+}
+
+/** 테마 메뉴에서 고른 값을 저장하고 적용한다. 다른 창도 storage 이벤트로 따라온다. */
+function setTheme(pref) {
+  storageSet(THEME_KEY, pref === "system" ? null : pref);
+  applyTheme();
 }
 
 function createEditor(value) {
@@ -156,6 +173,7 @@ async function toggleMode() {
   if (!wasDirty) state.savedContent = getValue();
   else state.dirty = computeDirty();
   updateTitle();
+  state.menu?.setSource(state.mode === "sv");
   state.vditor.focus();
 }
 
@@ -163,6 +181,10 @@ function applyTheme() {
   const dark = isDark();
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   state.vditor?.setTheme(dark ? "dark" : "classic", dark ? "dark" : "light", dark ? "github-dark" : "github");
+  // 창 제목 표시줄과 메뉴줄 색도 맞춘다.
+  const pref = themePref();
+  appWindow?.setTheme(pref === "system" ? null : pref).catch(() => {});
+  state.menu?.setTheme(pref);
 }
 
 /* ---------------- 상태 표시 ---------------- */
@@ -430,6 +452,7 @@ function highlightActive() {
 function setSidebarHidden(hidden) {
   $("app").classList.toggle("sidebar-hidden", hidden);
   storageSet(SIDEBAR_KEY, hidden ? "1" : null);
+  state.menu?.setSidebar(!hidden);
 }
 
 function setSidebarWidth(width, persist = true) {
@@ -465,6 +488,43 @@ function toggleSidebar() {
   setSidebarHidden(!$("app").classList.contains("sidebar-hidden"));
 }
 
+/* ---------------- 보기 · 도움말 ---------------- */
+
+async function toggleFullscreen() {
+  if (!appWindow) {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+    return;
+  }
+  await appWindow.setFullscreen(!(await appWindow.isFullscreen()));
+}
+
+const SHORTCUTS = `파일
+  Ctrl+N\t새 문서 (새 창)
+  Ctrl+O\t열기
+  Ctrl+Shift+O\t폴더 열기
+  Ctrl+S\t저장
+  Ctrl+Shift+S\t다른 이름으로 저장
+  Ctrl+P\t인쇄
+
+보기
+  Ctrl+/\tIR ↔ 원문 모드
+  Ctrl+\\\t사이드바 보이기/숨기기
+  F11\t전체 화면
+
+편집
+  Ctrl+Z / Ctrl+Y\t실행 취소 / 다시 실행
+  Ctrl+B / Ctrl+I\t굵게 / 기울임`;
+
+async function showShortcuts() {
+  await message(SHORTCUTS, { title: "단축키 목록", kind: "info" });
+}
+
+async function showAbout() {
+  const version = await getVersion().catch(() => "");
+  await message(`MdNote ${version}\n\nTypora 스타일 마크다운 편집기\nTauri · Vditor 기반`, { title: "MdNote 정보", kind: "info" });
+}
+
 /* ---------------- 이벤트 ---------------- */
 
 const actions = {
@@ -477,9 +537,15 @@ const actions = {
   toggleMode: exclusive(toggleMode),
   print: exclusive(printDocument),
   toggleSidebar,
+  toggleFullscreen,
 };
 
 function onKeyDown(e) {
+  if (e.key === "F11" && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    e.preventDefault();
+    actions.toggleFullscreen();
+    return;
+  }
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
   let action = null;
   switch (e.code) {
@@ -514,7 +580,9 @@ function onKeyDown(e) {
 
 function bindEvents() {
   window.addEventListener("keydown", onKeyDown, true);
-  darkQuery.addEventListener("change", applyTheme);
+  darkQuery.addEventListener("change", () => themePref() === "system" && applyTheme());
+  // 다른 창에서 테마를 바꾸면 이 창도 따라간다.
+  window.addEventListener("storage", (e) => e.key === THEME_KEY && applyTheme());
   window.addEventListener("focus", () => refreshTree());
   $("vditor").addEventListener("input", scheduleInputCheck);
   $("vditor").addEventListener("compositionend", scheduleInputCheck);
@@ -585,6 +653,33 @@ async function init() {
   if (savedWidth) setSidebarWidth(savedWidth, false);
   bindSidebarResizer();
   bindEvents();
+  if (appWindow) {
+    try {
+      state.menu = await installMenu(appWindow, {
+        newDocument: () => actions.newDocument(),
+        openFile: () => actions.openFile(),
+        openFolder: () => actions.openFolder(),
+        save: () => actions.save(),
+        saveAs: () => actions.saveAs(),
+        print: () => actions.print(),
+        close: () => appWindow.close(),
+        toggleSidebar: () => actions.toggleSidebar(),
+        toggleMode: () => actions.toggleMode(),
+        refreshTree: () => refreshTree(),
+        toggleFullscreen: () => actions.toggleFullscreen(),
+        setTheme: (t) => setTheme(t),
+        showShortcuts: () => exclusive(showShortcuts)(),
+        showAbout: () => exclusive(showAbout)(),
+      }, {
+        sidebar: !$("app").classList.contains("sidebar-hidden"),
+        source: state.mode === "sv",
+        theme: themePref(),
+      });
+    } catch (err) {
+      console.error("메뉴를 만들 수 없습니다", err);
+    }
+    applyTheme();
+  }
   await createEditor("");
   updateTitle();
 
