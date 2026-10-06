@@ -1,8 +1,7 @@
 name: Windows 빌드
 
+# 코드를 올릴 때마다 빌드하지 않고, Actions 탭의 "Run workflow" 버튼으로 필요할 때만 실행한다.
 on:
-  push:
-    branches: ["main", "master", "claude/**"]
   workflow_dispatch:
 
 jobs:

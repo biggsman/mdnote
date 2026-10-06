@@ -232,7 +232,7 @@ async function newDocument() {
   const win = new WebviewWindow(`doc-${Date.now()}`, {
     url: "index.html",
     title: "MdNote",
-    width: size?.width ?? 1100,
+    width: size?.width ?? 825,
     height: size?.height ?? 760,
     minWidth: 480,
     minHeight: 320,
