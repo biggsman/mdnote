@@ -80,6 +80,11 @@ npm run tauri dev
 
 ### 4. 설치 파일 만들기
 
+**가장 쉬운 방법:** `mdnote` 폴더의 **`build-windows.bat`** 을 더블클릭하세요.
+최신 코드 받기 → 부품 설치 → 빌드를 차례로 하고, 끝나면 설치 파일이 있는 폴더를 열어 줍니다.
+
+직접 입력하려면:
+
 ```powershell
 npm run tauri build
 ```
