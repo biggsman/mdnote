@@ -178,3 +178,40 @@ html, body {
 }
 #status-dirty { color: #d9822b; }
 #status-mode { cursor: pointer; }
+
+/* ---------- 인쇄 ---------- */
+#print-area { display: none; }
+
+@media print {
+  @page { margin: 18mm 16mm; }
+
+  html, body {
+    height: auto;
+    overflow: visible;
+    background: #fff !important;
+    color: #000;
+  }
+  #app { display: none !important; }
+
+  #print-area {
+    display: block;
+    color: #1f2328;
+    background: #fff;
+  }
+  #print-area.vditor-reset {
+    font-size: 11pt !important;
+    line-height: 1.7;
+  }
+  #print-area .vditor-copy { display: none !important; }
+  #print-area pre,
+  #print-area blockquote,
+  #print-area table,
+  #print-area img {
+    break-inside: avoid;
+  }
+  #print-area h1, #print-area h2, #print-area h3,
+  #print-area h4, #print-area h5, #print-area h6 {
+    break-after: avoid;
+  }
+  #print-area img { max-width: 100%; }
+}

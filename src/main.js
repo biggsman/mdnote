@@ -292,6 +292,52 @@ async function saveFileAs() {
   return true;
 }
 
+/* ---------------- 인쇄 ---------------- */
+
+/**
+ * 편집 화면 대신 문서 내용만 밝은 테마로 렌더링해서 인쇄한다.
+ * (코드 강조, 수식, 다이어그램 포함)
+ */
+async function printDocument() {
+  const markdown = getValue();
+  if (markdown.trim() === "") {
+    await message("인쇄할 내용이 없습니다.", { title: "MdNote", kind: "info" });
+    return;
+  }
+  const area = $("print-area");
+  await new Promise((resolve) => {
+    Vditor.preview(area, markdown, {
+      cdn: VDITOR_CDN,
+      lang: "ko_KR",
+      mode: "light",
+      theme: { current: "light", path: `${VDITOR_CDN}/dist/css/content-theme` },
+      hljs: { style: "github", lineNumber: false },
+      markdown: { toc: true, mark: true, footnotes: true, autoSpace: false },
+      math: { engine: "KaTeX" },
+      after: resolve,
+    });
+  });
+  // 코드 강조·수식 스크립트와 이미지가 그려질 시간을 준다.
+  await Promise.all([
+    document.fonts?.ready,
+    ...[...area.querySelectorAll("img")].map((img) =>
+      img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })),
+    new Promise((r) => setTimeout(r, 500)),
+  ]);
+  // 머리글에 찍히는 제목은 파일 이름만 쓴다.
+  document.title = docName();
+  document.body.classList.add("printing");
+  window.print();
+}
+
+function finishPrint() {
+  document.body.classList.remove("printing");
+  $("print-area").textContent = "";
+  // 인쇄용 밝은 테마로 바뀐 내용·코드 테마를 화면 테마로 되돌린다.
+  applyTheme();
+  updateTitle();
+}
+
 /* ---------------- 사이드바 ---------------- */
 
 async function openFolder() {
@@ -429,6 +475,7 @@ const actions = {
   save: exclusive(saveFile),
   saveAs: exclusive(saveFileAs),
   toggleMode: exclusive(toggleMode),
+  print: exclusive(printDocument),
   toggleSidebar,
 };
 
@@ -444,6 +491,9 @@ function onKeyDown(e) {
       break;
     case "KeyS":
       action = e.shiftKey ? actions.saveAs : actions.save;
+      break;
+    case "KeyP":
+      if (!e.shiftKey) action = actions.print;
       break;
     case "Slash":
       action = actions.toggleMode;
@@ -472,6 +522,8 @@ function bindEvents() {
   $("btn-folder").addEventListener("click", () => actions.openFolder());
   $("btn-refresh").addEventListener("click", () => refreshTree());
   $("btn-new").addEventListener("click", () => actions.newDocument());
+  $("btn-print").addEventListener("click", () => actions.print());
+  window.addEventListener("afterprint", finishPrint);
   $("status-mode").addEventListener("click", () => actions.toggleMode());
 
   $("tree").addEventListener("click", (e) => {
