@@ -8,6 +8,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plugin-dialog";
 import { installMenu } from "./menu.js";
+import { TOOLBAR_ITEMS, applyToolbar, applyHeading, wrapSelection, insertBlock } from "./format.js";
 
 // scripts/copy-vditor.mjs 가 node_modules/vditor/dist 를 public/vditor/dist 로 복사한다.
 const VDITOR_CDN = "/vditor";
@@ -19,8 +20,8 @@ const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
 const FOLDER_KEY = "mdnote.folder";
 const SIDEBAR_KEY = "mdnote.sidebarHidden";
 const SIDEBAR_PANEL_KEY = "mdnote.sidebarPanel"; // "files" | "outline"
-// Alt+글자로 여는 메뉴 (파일·편집·보기·테마·도움말)
-const MENU_KEYS = { KeyF: "f", KeyE: "e", KeyV: "v", KeyT: "t", KeyH: "h" };
+// Alt+글자로 여는 메뉴 (파일·편집·본문·서식·보기·테마·도움말)
+const MENU_KEYS = { KeyF: "f", KeyE: "e", KeyP: "p", KeyO: "o", KeyV: "v", KeyT: "t", KeyH: "h" };
 const THEME_KEY = "mdnote.theme"; // "system" | "light" | "dark"
 const SIDEBAR_WIDTH_KEY = "mdnote.sidebarWidth";
 const SIDEBAR_DEFAULT_WIDTH = 180;
@@ -95,7 +96,8 @@ function createEditor(value) {
       width: "100%",
       theme: dark ? "dark" : "classic",
       placeholder: "여기에 입력하세요…",
-      toolbar: [],
+      // 서식 명령용 툴바 (화면에는 CSS 로 숨김)
+      toolbar: TOOLBAR_ITEMS,
       toolbarConfig: { hide: true },
       cache: { enable: false },
       counter: { enable: false },
@@ -572,6 +574,60 @@ function toggleSidebar() {
   setSidebarHidden(!$("app").classList.contains("sidebar-hidden"));
 }
 
+/* ---------------- 본문 · 서식 ---------------- */
+
+/** 문서 폴더 기준 상대 경로 (드라이브가 다르면 절대 경로) */
+function relativePath(fromDir, toFile) {
+  const a = fromDir.replace(/\\/g, "/").split("/").filter(Boolean);
+  const b = toFile.replace(/\\/g, "/").split("/").filter(Boolean);
+  if (!a.length || !b.length || a[0].toLowerCase() !== b[0].toLowerCase()) return toFile.replace(/\\/g, "/");
+  let i = 0;
+  while (i < a.length && i < b.length - 1 && a[i].toLowerCase() === b[i].toLowerCase()) i++;
+  return [...Array(a.length - i).fill(".."), ...b.slice(i)].join("/");
+}
+
+async function insertImage() {
+  const file = await openDialog({
+    multiple: false,
+    directory: false,
+    filters: [{ name: "이미지", extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"] }],
+    defaultPath: state.filePath ? dirname(state.filePath) : (state.folder ?? undefined),
+  });
+  if (!file) return;
+  const path = state.filePath ? relativePath(dirname(state.filePath), file) : file.replace(/\\/g, "/");
+  const alt = basename(file).replace(/\.[^.]+$/, "");
+  state.vditor.insertValue(`![${alt}](${path.replace(/ /g, "%20")})`);
+}
+
+/** 본문·서식 명령. 편집기에 포커스를 돌려준 뒤 적용한다. */
+function format(fn) {
+  return () => {
+    if (!state.vditor) return;
+    state.vditor.focus();
+    fn(state.vditor);
+    scheduleInputCheck();
+  };
+}
+
+const formats = {
+  heading: (level) => format((v) => applyHeading(v, level))(),
+  table: format((v) => applyToolbar(v, "table")),
+  codeBlock: format((v) => applyToolbar(v, "code")),
+  mathBlock: format((v) => insertBlock(v, "$$\n\n$$")),
+  quote: format((v) => applyToolbar(v, "quote")),
+  orderedList: format((v) => applyToolbar(v, "ordered-list")),
+  bulletList: format((v) => applyToolbar(v, "list")),
+  taskList: format((v) => applyToolbar(v, "check")),
+  hr: format((v) => applyToolbar(v, "line")),
+  bold: format((v) => applyToolbar(v, "bold")),
+  italic: format((v) => applyToolbar(v, "italic")),
+  underline: format((v) => wrapSelection(v, "<u>", "</u>")),
+  strike: format((v) => applyToolbar(v, "strike")),
+  inlineCode: format((v) => applyToolbar(v, "inline-code")),
+  link: format((v) => applyToolbar(v, "link")),
+  image: () => exclusive(insertImage)(),
+};
+
 /* ---------------- 보기 · 도움말 ---------------- */
 
 async function toggleFullscreen() {
@@ -640,6 +696,32 @@ function onKeyUp(e) {
   }
 }
 
+/** 본문·서식 단축키 (Typora 와 같게). Ctrl 이 눌린 상태에서 부른다. */
+function formatShortcut(e) {
+  const digit = /^Digit([0-6])$/.exec(e.code);
+  if (digit && !e.shiftKey) return () => formats.heading(Number(digit[1]));
+  if (e.shiftKey) {
+    switch (e.code) {
+      case "KeyK": return formats.codeBlock;
+      case "KeyM": return formats.mathBlock;
+      case "KeyQ": return formats.quote;
+      case "BracketLeft": return formats.orderedList;
+      case "BracketRight": return formats.bulletList;
+      case "Backquote": return formats.inlineCode;
+      case "KeyI": return formats.image;
+      default: return null;
+    }
+  }
+  switch (e.code) {
+    case "KeyT": return formats.table;
+    case "KeyB": return formats.bold;
+    case "KeyI": return formats.italic;
+    case "KeyU": return formats.underline;
+    case "KeyK": return formats.link;
+    default: return null;
+  }
+}
+
 function onKeyDown(e) {
   altAlone = e.code === "AltLeft" && !e.repeat && !e.ctrlKey && !e.shiftKey && !e.metaKey;
   if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && MENU_KEYS[e.code]) {
@@ -653,7 +735,21 @@ function onKeyDown(e) {
     actions.toggleFullscreen();
     return;
   }
+  // 취소선: Alt+Shift+5 (Typora 와 같음)
+  if (e.altKey && e.shiftKey && !e.ctrlKey && e.code === "Digit5") {
+    e.preventDefault();
+    e.stopPropagation();
+    formats.strike();
+    return;
+  }
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const fmt = formatShortcut(e);
+  if (fmt) {
+    e.preventDefault();
+    e.stopPropagation();
+    fmt();
+    return;
+  }
   let action = null;
   switch (e.code) {
     case "KeyN":
@@ -787,6 +883,7 @@ async function init() {
         setTheme: (t) => setTheme(t),
         showShortcuts: () => exclusive(showShortcuts)(),
         showAbout: () => exclusive(showAbout)(),
+        ...formats,
       }, {
         sidebar: !$("app").classList.contains("sidebar-hidden"),
         source: state.mode === "sv",

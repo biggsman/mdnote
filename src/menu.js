@@ -5,7 +5,7 @@ import { Menu, Submenu, MenuItem, CheckMenuItem, PredefinedMenuItem } from "@tau
 const label = (text, shortcut) => (shortcut ? `${text}\t${shortcut}` : text);
 
 /**
- * 창 위쪽 메뉴줄(파일/편집/보기/테마/도움말)을 만든다.
+ * 창 위쪽 메뉴줄(파일/편집/본문/서식/보기/테마/도움말)을 만든다.
  * @param {import("@tauri-apps/api/window").Window} win
  * @param {Record<string, () => void>} on  메뉴 항목이 부를 동작
  * @param {{ sidebar: boolean, source: boolean, theme: "system" | "light" | "dark" }} initial
@@ -60,6 +60,37 @@ export async function installMenu(win, on, initial) {
           await edit("Paste", "붙여넣기"),
           await sep(),
           await edit("SelectAll", "모두 선택"),
+        ],
+      }),
+      await Submenu.new({
+        text: "본문(&P)",
+        items: [
+          ...(await Promise.all([1, 2, 3, 4, 5, 6].map((n) => item(`제목 ${n}`, `Ctrl+${n}`, () => on.heading(n))))),
+          await item("본문 (제목 해제)", "Ctrl+0", () => on.heading(0)),
+          await sep(),
+          await item("표 삽입", "Ctrl+T", on.table),
+          await item("코드 블록", "Ctrl+Shift+K", on.codeBlock),
+          await item("수식 블록", "Ctrl+Shift+M", on.mathBlock),
+          await item("인용", "Ctrl+Shift+Q", on.quote),
+          await sep(),
+          await item("번호 목록", "Ctrl+Shift+[", on.orderedList),
+          await item("글머리 기호 목록", "Ctrl+Shift+]", on.bulletList),
+          await item("할 일 목록", null, on.taskList),
+          await sep(),
+          await item("구분선", null, on.hr),
+        ],
+      }),
+      await Submenu.new({
+        text: "서식(&O)",
+        items: [
+          await item("굵게", "Ctrl+B", on.bold),
+          await item("기울임", "Ctrl+I", on.italic),
+          await item("밑줄", "Ctrl+U", on.underline),
+          await item("취소선", "Alt+Shift+5", on.strike),
+          await item("인라인 코드", "Ctrl+Shift+`", on.inlineCode),
+          await sep(),
+          await item("링크", "Ctrl+K", on.link),
+          await item("이미지...", "Ctrl+Shift+I", on.image),
         ],
       }),
       await Submenu.new({
