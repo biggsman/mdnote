@@ -14,19 +14,10 @@
           <button class="sidebar-tab" data-panel="outline">개요</button>
         </div>
         <div id="panel-files" class="sidebar-panel">
-        <div class="sidebar-header">
-          <span id="folder-name" class="folder-name" title="">폴더 없음</span>
-          <button id="btn-new" class="icon-btn" title="새 문서 - 새 창 (Ctrl+N)">＋</button>
-          <button id="btn-print" class="icon-btn" title="인쇄 (Ctrl+P)">🖨</button>
-          <button id="btn-refresh" class="icon-btn" title="새로 고침">⟳</button>
-          <button id="btn-folder" class="icon-btn" title="폴더 열기 (Ctrl+Shift+O)">📂</button>
-        </div>
         <div id="tree" class="tree">
-          <div class="tree-empty">
-            <p>열린 폴더가 없습니다.</p>
-            <button class="text-btn" data-action="open-folder">폴더 열기<br />(Ctrl+Shift+O)</button>
-          </div>
+          <div class="tree-empty">열린 폴더가 없음.</div>
         </div>
+        <button id="folder-footer" class="folder-footer" title="다른 폴더 열기 (Ctrl+Shift+O)">폴더 열기...</button>
         </div>
         <div id="panel-outline" class="sidebar-panel" hidden>
           <div id="outline" class="outline"></div>

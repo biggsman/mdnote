@@ -119,6 +119,23 @@ html, body {
   color: var(--muted);
 }
 
+/* 사이드바 아래: 열린 폴더 이름 (누르면 다른 폴더 열기) */
+.folder-footer {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: none;
+  border-top: 1px solid var(--sidebar-border);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.folder-footer:hover { background: var(--hover); }
+
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -154,6 +171,7 @@ html, body {
 }
 
 .tree-empty {
+  margin: auto 0;
   padding: 20px 8px;
   text-align: center;
   color: var(--muted);
@@ -267,4 +285,11 @@ html, body {
     break-after: avoid;
   }
   #print-area img { max-width: 100%; }
+}
+
+/* '열린 폴더가 없음.' 을 가운데에 */
+.tree:has(> .tree-empty) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }

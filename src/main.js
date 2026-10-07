@@ -17,7 +17,6 @@ const MD_FILTERS = [
   { name: "모든 파일", extensions: ["*"] },
 ];
 const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
-const FOLDER_KEY = "mdnote.folder";
 const SIDEBAR_KEY = "mdnote.sidebarHidden";
 const SIDEBAR_PANEL_KEY = "mdnote.sidebarPanel"; // "files" | "outline"
 // Alt+글자로 여는 메뉴 (파일·편집·본문·서식·보기·테마·도움말)
@@ -274,6 +273,15 @@ async function loadFile(path) {
   const content = await invoke("read_file", { path });
   state.filePath = path;
   setContent(content);
+  // Typora 처럼 연 파일이 있는 폴더를 사이드바에 보여 준다. (이미 열린 폴더 안의 파일이면 그대로)
+  if (!isInside(path, state.folder)) await setFolder(dirname(path), false).catch(() => {});
+}
+
+/** path 가 folder 안에 있는지 (대소문자·구분자 무시) */
+function isInside(path, folder) {
+  if (!path || !folder) return false;
+  const norm = (p) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  return norm(path).startsWith(`${norm(folder)}/`);
 }
 
 async function openFile() {
@@ -454,7 +462,6 @@ async function setFolder(dir, reveal = true) {
   const tree = await invoke("list_md_tree", { root: dir });
   if (state.folder !== dir) state.expanded.clear();
   state.folder = dir;
-  storageSet(FOLDER_KEY, dir);
   renderTree(tree);
   if (reveal) {
     setSidebarHidden(false);
@@ -469,23 +476,23 @@ async function refreshTree() {
   } catch {
     // 폴더가 사라졌으면 사이드바를 비운다.
     state.folder = null;
-    storageSet(FOLDER_KEY, null);
     renderTree(null);
   }
 }
 
 function renderTree(root) {
   const treeEl = $("tree");
-  const nameEl = $("folder-name");
+  const footer = $("folder-footer");
   treeEl.innerHTML = "";
   if (!root) {
-    nameEl.textContent = "폴더 없음";
-    nameEl.title = "";
-    treeEl.innerHTML = `<div class="tree-empty"><p>열린 폴더가 없습니다.</p><button class="text-btn" data-action="open-folder">폴더 열기<br />(Ctrl+Shift+O)</button></div>`;
+    footer.textContent = "폴더 열기...";
+    footer.title = "폴더 열기 (Ctrl+Shift+O)";
+    treeEl.innerHTML = `<div class="tree-empty">열린 폴더가 없음.</div>`;
     return;
   }
-  nameEl.textContent = root.name;
-  nameEl.title = root.path;
+  // 아래쪽 폴더 이름을 누르면 다른 폴더를 연다.
+  footer.textContent = `📁 ${root.name}`;
+  footer.title = `${root.path}\n클릭하면 다른 폴더를 엽니다 (Ctrl+Shift+O)`;
   if (root.children.length === 0) {
     treeEl.innerHTML = `<div class="tree-empty"><p>.md 파일이 없습니다.</p></div>`;
     return;
@@ -799,10 +806,7 @@ function bindEvents() {
   $("vditor").addEventListener("input", scheduleInputCheck);
   $("vditor").addEventListener("compositionend", scheduleInputCheck);
 
-  $("btn-folder").addEventListener("click", () => actions.openFolder());
-  $("btn-refresh").addEventListener("click", () => refreshTree());
-  $("btn-new").addEventListener("click", () => actions.newDocument());
-  $("btn-print").addEventListener("click", () => actions.print());
+  $("folder-footer").addEventListener("click", () => actions.openFolder());
   window.addEventListener("afterprint", finishPrint);
   $("status-mode").addEventListener("click", () => actions.toggleMode());
 
@@ -901,15 +905,7 @@ async function init() {
 
   // 탐색기에서 더블클릭한 파일은 처음 뜨는 메인 창에서만 연다.
   const startupFile = appWindow.label === "main" ? await invoke("get_startup_file").catch(() => null) : null;
-  const savedFolder = storageGet(FOLDER_KEY);
-  const folder = savedFolder ?? (startupFile ? dirname(startupFile) : null);
-  if (folder) {
-    try {
-      await setFolder(folder, false);
-    } catch {
-      storageSet(FOLDER_KEY, null);
-    }
-  }
+  // 사이드바에는 연 파일의 폴더만 보여 준다. (loadFile 이 설정)
   if (startupFile) {
     try {
       await loadFile(startupFile);
