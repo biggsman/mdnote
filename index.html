@@ -9,6 +9,11 @@
   <body>
     <div id="app">
       <aside id="sidebar">
+        <div class="sidebar-tabs">
+          <button class="sidebar-tab active" data-panel="files">파일</button>
+          <button class="sidebar-tab" data-panel="outline">개요</button>
+        </div>
+        <div id="panel-files" class="sidebar-panel">
         <div class="sidebar-header">
           <span id="folder-name" class="folder-name" title="">폴더 없음</span>
           <button id="btn-new" class="icon-btn" title="새 문서 - 새 창 (Ctrl+N)">＋</button>
@@ -21,6 +26,10 @@
             <p>열린 폴더가 없습니다.</p>
             <button class="text-btn" data-action="open-folder">폴더 열기<br />(Ctrl+Shift+O)</button>
           </div>
+        </div>
+        </div>
+        <div id="panel-outline" class="sidebar-panel" hidden>
+          <div id="outline" class="outline"></div>
         </div>
       </aside>
       <div id="sidebar-resizer" title="끌어서 너비 조절 (더블클릭: 기본값)"></div>

@@ -18,6 +18,9 @@ const MD_FILTERS = [
 const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
 const FOLDER_KEY = "mdnote.folder";
 const SIDEBAR_KEY = "mdnote.sidebarHidden";
+const SIDEBAR_PANEL_KEY = "mdnote.sidebarPanel"; // "files" | "outline"
+// Alt+글자로 여는 메뉴 (파일·편집·보기·테마·도움말)
+const MENU_KEYS = { KeyF: "f", KeyE: "e", KeyV: "v", KeyT: "t", KeyH: "h" };
 const THEME_KEY = "mdnote.theme"; // "system" | "light" | "dark"
 const SIDEBAR_WIDTH_KEY = "mdnote.sidebarWidth";
 const SIDEBAR_DEFAULT_WIDTH = 180;
@@ -145,6 +148,7 @@ function refreshDirty() {
 function onInput() {
   refreshDirty();
   updateCount();
+  scheduleOutline();
 }
 
 // Vditor 의 input 콜백은 undoDelay 만큼 늦게 오므로 직접 입력 이벤트도 감시한다.
@@ -161,6 +165,7 @@ function setContent(markdown) {
   state.dirty = false;
   updateTitle();
   updateCount();
+  renderOutline();
   state.vditor.focus();
 }
 
@@ -174,6 +179,7 @@ async function toggleMode() {
   else state.dirty = computeDirty();
   updateTitle();
   state.menu?.setSource(state.mode === "sv");
+  renderOutline();
   state.vditor.focus();
 }
 
@@ -360,6 +366,81 @@ function finishPrint() {
   updateTitle();
 }
 
+/* ---------------- 개요(목차) ---------------- */
+
+/** 편집기 화면에서 제목 요소를 찾는다. (IR 모드는 h1~h6, 원문 모드는 '#' 표시가 있는 줄) */
+function findHeadings() {
+  const root = state.vditor?.vditor?.element;
+  if (!root) return [];
+  if (state.mode === "sv") {
+    return [...root.querySelectorAll('.vditor-sv [data-type="heading-marker"]')].map((marker) => {
+      const line = marker.parentElement;
+      const copy = line.cloneNode(true);
+      copy.querySelectorAll('[class*="vditor-sv__marker"]').forEach((m) => m.remove());
+      const level = (marker.textContent.match(/#/g) || []).length || 1;
+      return { el: line, level, text: copy.textContent.trim() };
+    });
+  }
+  return [...root.querySelectorAll(".vditor-ir .vditor-reset :is(h1, h2, h3, h4, h5, h6)")]
+    .filter((h) => !h.closest(".vditor-ir__preview"))
+    .map((h) => {
+      const copy = h.cloneNode(true);
+      copy.querySelectorAll(".vditor-ir__marker").forEach((m) => m.remove());
+      return { el: h, level: Number(h.tagName[1]), text: copy.textContent.trim() };
+    });
+}
+
+let outlineHeadings = [];
+let outlineTimer = 0;
+
+function scheduleOutline() {
+  clearTimeout(outlineTimer);
+  outlineTimer = setTimeout(renderOutline, 300);
+}
+
+function renderOutline() {
+  if ($("panel-outline").hidden) return;
+  outlineHeadings = findHeadings().filter((h) => h.text);
+  const box = $("outline");
+  box.textContent = "";
+  if (outlineHeadings.length === 0) {
+    box.innerHTML = `<div class="outline-empty">제목이 없습니다.<br />'# 제목' 형식으로 쓰면 여기에 표시됩니다.</div>`;
+    return;
+  }
+  const top = Math.min(...outlineHeadings.map((h) => h.level));
+  outlineHeadings.forEach((h, i) => {
+    const item = document.createElement("div");
+    item.className = "outline-item";
+    item.classList.toggle("top", h.level === top);
+    item.style.paddingLeft = `${12 + (h.level - top) * 16}px`;
+    item.dataset.index = String(i);
+    item.title = h.text;
+    item.textContent = h.text;
+    box.appendChild(item);
+  });
+}
+
+/** 개요에서 고른 제목으로 편집기를 스크롤한다. */
+function goToHeading(index) {
+  const h = outlineHeadings[index];
+  if (!h || !h.el.isConnected) {
+    renderOutline();
+    return;
+  }
+  h.el.scrollIntoView({ block: "start" });
+}
+
+function showSidebarPanel(panel) {
+  const name = panel === "outline" ? "outline" : "files";
+  for (const tab of document.querySelectorAll(".sidebar-tab")) {
+    tab.classList.toggle("active", tab.dataset.panel === name);
+  }
+  $("panel-files").hidden = name !== "files";
+  $("panel-outline").hidden = name !== "outline";
+  storageSet(SIDEBAR_PANEL_KEY, name === "files" ? null : name);
+  if (name === "outline") renderOutline();
+}
+
 /* ---------------- 사이드바 ---------------- */
 
 async function openFolder() {
@@ -367,13 +448,16 @@ async function openFolder() {
   if (dir) await setFolder(dir);
 }
 
-async function setFolder(dir) {
+async function setFolder(dir, reveal = true) {
   const tree = await invoke("list_md_tree", { root: dir });
   if (state.folder !== dir) state.expanded.clear();
   state.folder = dir;
   storageSet(FOLDER_KEY, dir);
   renderTree(tree);
-  setSidebarHidden(false);
+  if (reveal) {
+    setSidebarHidden(false);
+    showSidebarPanel("files");
+  }
 }
 
 async function refreshTree() {
@@ -540,7 +624,30 @@ const actions = {
   toggleFullscreen,
 };
 
+function openMenu(key) {
+  if (isTauri()) invoke("open_menu", { key }).catch(() => {});
+}
+
+// 왼쪽 Alt 를 눌렀다 떼기만 하면 메뉴줄을 활성화한다(Windows 기본 동작과 같게).
+// 오른쪽 Alt 는 한/영 키로 쓰이므로 제외한다.
+let altAlone = false;
+
+function onKeyUp(e) {
+  if (e.code === "AltLeft" && altAlone) {
+    altAlone = false;
+    e.preventDefault();
+    openMenu("");
+  }
+}
+
 function onKeyDown(e) {
+  altAlone = e.code === "AltLeft" && !e.repeat && !e.ctrlKey && !e.shiftKey && !e.metaKey;
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && MENU_KEYS[e.code]) {
+    e.preventDefault();
+    e.stopPropagation();
+    openMenu(MENU_KEYS[e.code]);
+    return;
+  }
   if (e.key === "F11" && !e.ctrlKey && !e.altKey && !e.shiftKey) {
     e.preventDefault();
     actions.toggleFullscreen();
@@ -579,6 +686,15 @@ function onKeyDown(e) {
 }
 
 function bindEvents() {
+  window.addEventListener("keyup", onKeyUp, true);
+  window.addEventListener("blur", () => { altAlone = false; });
+  for (const tab of document.querySelectorAll(".sidebar-tab")) {
+    tab.addEventListener("click", () => showSidebarPanel(tab.dataset.panel));
+  }
+  $("outline").addEventListener("click", (e) => {
+    const item = e.target.closest(".outline-item");
+    if (item) goToHeading(Number(item.dataset.index));
+  });
   window.addEventListener("keydown", onKeyDown, true);
   darkQuery.addEventListener("change", () => themePref() === "system" && applyTheme());
   // 다른 창에서 테마를 바꾸면 이 창도 따라간다.
@@ -652,6 +768,7 @@ async function init() {
   const savedWidth = Number(storageGet(SIDEBAR_WIDTH_KEY));
   if (savedWidth) setSidebarWidth(savedWidth, false);
   bindSidebarResizer();
+  showSidebarPanel(storageGet(SIDEBAR_PANEL_KEY));
   bindEvents();
   if (appWindow) {
     try {
@@ -691,8 +808,7 @@ async function init() {
   const folder = savedFolder ?? (startupFile ? dirname(startupFile) : null);
   if (folder) {
     try {
-      await setFolder(folder);
-      if (storageGet(SIDEBAR_KEY) === "1") setSidebarHidden(true);
+      await setFolder(folder, false);
     } catch {
       storageSet(FOLDER_KEY, null);
     }

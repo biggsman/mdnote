@@ -66,6 +66,59 @@ html, body {
 #app.resizing #sidebar-resizer { background: var(--accent); opacity: 0.4; }
 #app.resizing { cursor: col-resize; user-select: none; }
 
+/* 사이드바 탭: 파일 | 개요 */
+.sidebar-tabs {
+  display: flex;
+  padding: 6px 12px 0;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+.sidebar-tab {
+  flex: 1;
+  padding: 8px 0 7px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sidebar-tab:hover { color: var(--fg); }
+.sidebar-tab.active {
+  color: var(--fg);
+  font-weight: 600;
+  border-bottom-color: var(--fg);
+}
+
+.sidebar-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-panel[hidden] { display: none; }
+
+/* 개요(목차) */
+.outline {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+.outline-item {
+  padding: 5px 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.outline-item:hover { background: var(--hover); }
+.outline-item.top { font-weight: 600; }
+.outline-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
 .sidebar-header {
   display: flex;
   align-items: center;

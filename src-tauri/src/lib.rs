@@ -131,11 +131,29 @@ fn strip_verbatim(p: String) -> String {
     }
 }
 
+/// 편집기(웹뷰)에 포커스가 있으면 Alt+F 같은 메뉴 단축키가 창 메뉴줄로 가지 않으므로
+/// 창에 메뉴 키 메시지를 직접 보내 메뉴를 연다. key 가 비어 있으면 메뉴줄만 활성화한다.
+#[tauri::command]
+fn open_menu(window: tauri::WebviewWindow, key: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use windows::Win32::Foundation::{LPARAM, WPARAM};
+        use windows::Win32::UI::WindowsAndMessaging::{PostMessageW, SC_KEYMENU, WM_SYSCOMMAND};
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        let ch = key.chars().next().map(|c| c.to_ascii_lowercase() as isize).unwrap_or(0);
+        unsafe { PostMessageW(Some(hwnd), WM_SYSCOMMAND, WPARAM(SC_KEYMENU as usize), LPARAM(ch)) }
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(not(windows))]
+    let _ = (window, key);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file])
+        .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file, open_menu])
         .run(tauri::generate_context!())
         .expect("MdNote 실행 중 오류가 발생했습니다");
 }
