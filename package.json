@@ -1,7 +1,7 @@
 {
   "name": "geuldam",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "scripts": {
     "copy-vditor": "node scripts/copy-vditor.mjs",
