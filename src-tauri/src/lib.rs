@@ -102,7 +102,7 @@ fn write_file(path: String, content: String) -> Result<(), String> {
         .ok_or_else(|| format!("잘못된 경로입니다: {path}"))?
         .to_string_lossy()
         .into_owned();
-    let tmp = target.with_file_name(format!(".{file_name}.mdnote-tmp"));
+    let tmp = target.with_file_name(format!(".{file_name}.geuldam-tmp"));
     let result = fs::write(&tmp, content.as_bytes()).and_then(|_| fs::rename(&tmp, &target));
     if let Err(e) = result {
         let _ = fs::remove_file(&tmp);
@@ -155,5 +155,5 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file, open_menu])
         .run(tauri::generate_context!())
-        .expect("MdNote 실행 중 오류가 발생했습니다");
+        .expect("글담 실행 중 오류가 발생했습니다");
 }

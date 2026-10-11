@@ -197,7 +197,7 @@ function applyTheme() {
 /* ---------------- 상태 표시 ---------------- */
 
 function updateTitle() {
-  const title = `${state.dirty ? "● " : ""}${docName()} - MdNote`;
+  const title = `${state.dirty ? "● " : ""}${docName()} - 글담`;
   document.title = title;
   appWindow?.setTitle(title).catch(() => {});
   $("status-path").textContent = state.filePath ?? "새 문서";
@@ -215,7 +215,7 @@ function updateCount() {
 async function showError(err) {
   const msg = typeof err === "string" ? err : (err?.message ?? String(err));
   console.error(err);
-  if (isTauri()) await message(msg, { title: "MdNote", kind: "error" });
+  if (isTauri()) await message(msg, { title: "글담", kind: "error" });
   else alert(msg);
 }
 
@@ -227,7 +227,7 @@ async function confirmDiscard() {
   const SAVE = "저장";
   const DISCARD = "저장 안 함";
   const answer = await message(`'${docName()}'의 변경 내용을 저장할까요?\n저장하지 않으면 변경 내용이 사라집니다.`, {
-    title: "MdNote",
+    title: "글담",
     kind: "warning",
     buttons: { yes: SAVE, no: DISCARD, cancel: "취소" },
   });
@@ -260,7 +260,7 @@ async function newDocument() {
   const size = await appWindow.innerSize().then((s) => s.toLogical(window.devicePixelRatio)).catch(() => null);
   const win = new WebviewWindow(`doc-${Date.now()}`, {
     url: "index.html",
-    title: "MdNote",
+    title: "글담",
     width: size?.width ?? 825,
     height: size?.height ?? 760,
     minWidth: 480,
@@ -339,7 +339,7 @@ async function saveFileAs() {
 async function printDocument() {
   const markdown = getValue();
   if (markdown.trim() === "") {
-    await message("인쇄할 내용이 없습니다.", { title: "MdNote", kind: "info" });
+    await message("인쇄할 내용이 없습니다.", { title: "글담", kind: "info" });
     return;
   }
   const area = $("print-area");
@@ -669,7 +669,7 @@ async function showShortcuts() {
 
 async function showAbout() {
   const version = await getVersion().catch(() => "");
-  await message(`MdNote ${version}\n\nTypora 스타일 마크다운 편집기\nTauri · Vditor 기반`, { title: "MdNote 정보", kind: "info" });
+  await message(`글담 ${version}\n\nTypora 스타일 마크다운 편집기\nTauri · Vditor 기반`, { title: "글담 정보", kind: "info" });
 }
 
 /* ---------------- 이벤트 ---------------- */

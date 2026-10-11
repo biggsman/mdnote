@@ -1,12 +1,12 @@
 [package]
-name = "mdnote"
-version = "0.2.0"
+name = "geuldam"
+version = "0.2.1"
 description = "Typora-style Markdown editor"
-authors = ["MdNote"]
+authors = ["Geuldam"]
 edition = "2021"
 
 [lib]
-name = "mdnote_lib"
+name = "geuldam_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -1,4 +1,4 @@
-# MdNote
+# 글담 (Geuldam)
 
 Typora 스타일의 가벼운 마크다운 편집기입니다.
 [Tauri 2](https://tauri.app) + Vite(바닐라 JS) + [Vditor](https://github.com/Vanessa219/vditor)(IR 모드)로 만들었습니다.
@@ -9,7 +9,7 @@ Typora 스타일의 가벼운 마크다운 편집기입니다.
 - 새 문서(새 창으로 열려 여러 문서를 동시에 편집) / 열기 / 저장 / 다른 이름으로 저장
 - 왼쪽 사이드바에 폴더의 `.md` 파일 트리 표시 (마지막으로 연 폴더를 기억)
 - 제목 표시줄·상태 표시줄에 **저장 안 됨(●)** 표시, 새 문서/다른 파일 열기/창 닫기 전에 저장 여부 확인
-- `.md`, `.markdown` 파일 연결 — 탐색기에서 더블클릭하면 MdNote로 열림
+- `.md`, `.markdown` 파일 연결 — 탐색기에서 더블클릭하면 글담로 열림
 - 인쇄 — 편집 화면 대신 문서 내용만 밝은 테마로 깔끔하게 인쇄 (PDF로 저장도 가능)
 - 창 위쪽 메뉴줄: 파일(F) · 편집(E) · 본문(P) · 서식(O) · 보기(V) · 테마(T) · 도움말(H)
 - 사이드바 탭: 파일(폴더 트리) / 개요(문서 제목 목록, 클릭하면 이동)
@@ -101,12 +101,12 @@ npm run tauri build
 
 완료되면 아래 위치에 설치 파일이 생깁니다.
 
-- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\MdNote_0.1.0_x64-setup.exe`
-- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\MdNote_0.1.0_x64_en-US.msi`
-- 설치 없이 실행: `src-tauri\target\release\mdnote.exe`
+- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_0.2.1_x64-setup.exe`
+- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_0.2.1_x64_en-US.msi`
+- 설치 없이 실행: `src-tauri\target\release\geuldam.exe`
 
 설치 프로그램으로 설치하면 `.md` 파일 연결이 등록됩니다.
-탐색기에서 `.md` 파일을 오른쪽 클릭 → **연결 프로그램** → **MdNote**를 선택하고
+탐색기에서 `.md` 파일을 오른쪽 클릭 → **연결 프로그램** → **글담**를 선택하고
 "항상 이 앱을 사용하여 .md 파일 열기"를 체크하면 더블클릭으로 열립니다.
 
 > MSI 빌드는 WiX 도구를, NSIS 빌드는 NSIS 도구를 Tauri가 처음 빌드할 때 자동으로 내려받습니다.

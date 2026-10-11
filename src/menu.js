@@ -112,7 +112,7 @@ export async function installMenu(win, on, initial) {
         items: [
           await item("단축키 목록", null, on.showShortcuts),
           await sep(),
-          await item("MdNote 정보", null, on.showAbout),
+          await item("글담 정보", null, on.showAbout),
         ],
       }),
     ],

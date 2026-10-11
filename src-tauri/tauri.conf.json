@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MdNote",
-  "version": "0.2.0",
-  "identifier": "com.mdnote.app",
+  "productName": "Geuldam",
+  "version": "0.2.1",
+  "identifier": "com.geuldam.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "MdNote",
+        "title": "글담",
         "width": 825,
         "height": 760,
         "minWidth": 480,
@@ -32,7 +32,7 @@
       "nsis",
       "msi"
     ],
-    "publisher": "MdNote",
+    "publisher": "Geuldam",
     "category": "Productivity",
     "shortDescription": "Typora-style Markdown editor",
     "icon": [
