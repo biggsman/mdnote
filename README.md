@@ -1,7 +1,8 @@
 # 글담 (Geuldam)
 
 Typora 스타일의 가벼운 마크다운 편집기입니다.
-[Tauri 2](https://tauri.app) + Vite(바닐라 JS) + [Vditor](https://github.com/Vanessa219/vditor)(IR 모드)로 만들었습니다.
+[Tauri 2](https://tauri.app) + Vite(바닐라 JS)로 만들었습니다.
+편집기는 [Vditor](https://github.com/Vanessa219/vditor) 3.11.3(MIT)의 소스를 가져와 `src/vditor` 에서 글담에 맞게 고쳐 씁니다.
 
 ## 기능
 
@@ -101,8 +102,8 @@ npm run tauri build
 
 완료되면 아래 위치에 설치 파일이 생깁니다.
 
-- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_0.2.3_x64-setup.exe`
-- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_0.2.3_x64_en-US.msi`
+- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_0.3.0_x64-setup.exe`
+- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_0.3.0_x64_en-US.msi`
 - 설치 없이 실행: `src-tauri\target\release\geuldam.exe`
 
 설치 프로그램으로 설치하면 `.md` 파일 연결이 등록됩니다.
@@ -125,8 +126,11 @@ npm run tauri build
 mdnote/
 ├─ index.html              # 화면 뼈대 (사이드바 + 편집기 + 상태 표시줄)
 ├─ src/
-│  ├─ main.js              # 편집기, 파일 작업, 단축키, 사이드바 로직
-│  └─ style.css
+│  ├─ main.js              # 파일 작업, 단축키, 사이드바, 개요, 인쇄
+│  ├─ menu.js              # 창 메뉴줄
+│  ├─ format.js            # 본문·서식 명령
+│  ├─ style.css
+│  └─ vditor/              # 편집기 소스 (Vditor 3.11.3 기반, 글담에서 고쳐 씀)
 ├─ scripts/copy-vditor.mjs # node_modules/vditor/dist → public/vditor/dist 복사
 ├─ vite.config.js
 └─ src-tauri/

@@ -12,6 +12,10 @@ export default defineConfig({
     watch: { ignored: ["**/src-tauri/**"] },
   },
   envPrefix: ["VITE_", "TAURI_ENV_*"],
+  // src/vditor 가 빌드 때 받는 상수 (원본은 webpack DefinePlugin 으로 넣음)
+  define: {
+    VDITOR_VERSION: JSON.stringify("3.11.3"),
+  },
   build: {
     target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari13",
     minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,

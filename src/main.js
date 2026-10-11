@@ -1,5 +1,5 @@
-import Vditor from "vditor";
-import "vditor/dist/index.css";
+// 편집기: Vditor 3.11.3 소스를 가져와 글담에 맞게 고쳐 쓰는 코드 (src/vditor)
+import Vditor from "./vditor/index.ts";
 import "./style.css";
 import { invoke, isTauri, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
