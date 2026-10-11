@@ -89,30 +89,6 @@ npm run tauri dev
 처음에는 Rust 크레이트를 컴파일하느라 몇 분 걸립니다. 이후에는 빠르게 뜹니다.
 `src/` 아래 파일을 고치면 창이 자동으로 새로 고쳐집니다.
 
-### 4. 설치 파일 만들기
-
-**가장 쉬운 방법:** `mdnote` 폴더의 **`build-windows.bat`** 을 더블클릭하세요.
-최신 코드 받기 → 부품 설치 → 빌드를 차례로 하고, 끝나면 설치 파일이 있는 폴더를 열어 줍니다.
-
-직접 입력하려면:
-
-```powershell
-npm run tauri build
-```
-
-완료되면 아래 위치에 설치 파일이 생깁니다.
-
-- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_<버전>_x64-setup.exe`
-- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_<버전>_x64_en-US.msi`
-- 설치 없이 실행: `src-tauri\target\release\geuldam.exe`
-
-설치 프로그램으로 설치하면 `.md` 파일 연결이 등록됩니다.
-탐색기에서 `.md` 파일을 오른쪽 클릭 → **연결 프로그램** → **글담**을 선택하고
-"항상 이 앱을 사용하여 .md 파일 열기"를 체크하면 더블클릭으로 열립니다.
-
-> MSI 빌드는 WiX 도구를, NSIS 빌드는 NSIS 도구를 Tauri가 처음 빌드할 때 자동으로 내려받습니다.
-> 회사 네트워크 등으로 내려받기가 막혀 있으면 `npm run tauri build -- --bundles nsis`처럼 하나만 지정해 보세요.
-
 ### 문제 해결
 
 - **`link.exe`를 찾을 수 없음** → C++ Build Tools의 "C++를 사용한 데스크톱 개발"이 설치되지 않은 것입니다. 1번을 다시 확인하세요.
