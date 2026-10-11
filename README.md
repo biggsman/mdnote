@@ -8,14 +8,14 @@ Typora 스타일의 가벼운 마크다운 편집기입니다.
 
 - 입력하는 즉시 서식이 반영되는 IR(Instant Rendering) 편집, `Ctrl+/`로 원문(마크다운 소스) 편집과 전환
 - 새 문서(새 창으로 열려 여러 문서를 동시에 편집) / 열기 / 저장 / 다른 이름으로 저장
-- 왼쪽 사이드바에 폴더의 `.md` 파일 트리 표시 (마지막으로 연 폴더를 기억)
+- 왼쪽 사이드바에 열린 파일이 있는 폴더의 `.md` 파일 트리 표시 (아래쪽 폴더 이름을 눌러 다른 폴더 열기)
 - 제목 표시줄·상태 표시줄에 **저장 안 됨(●)** 표시, 새 문서/다른 파일 열기/창 닫기 전에 저장 여부 확인
-- `.md`, `.markdown` 파일 연결 — 탐색기에서 더블클릭하면 글담로 열림
+- `.md`, `.markdown` 파일 연결 — 탐색기에서 더블클릭하면 글담으로 열림
 - 인쇄 — 편집 화면 대신 문서 내용만 밝은 테마로 깔끔하게 인쇄 (PDF로 저장도 가능)
 - 창 위쪽 메뉴줄: 파일(F) · 편집(E) · 본문(P) · 서식(O) · 보기(V) · 테마(T) · 도움말(H)
 - 사이드바 탭: 파일(폴더 트리) / 개요(문서 제목 목록, 클릭하면 이동)
 - 테마 선택: 시스템 설정 따르기 / 밝게 / 어둡게 (모든 창에 함께 적용)
-- 파일이나 폴더를 창에 끌어다 놓아서 열기
+- 파일·폴더를 창에 끌어다 놓아서 열기, 이미지를 끌어다 놓으면 그 위치에 삽입
 - Windows 시스템 다크 모드를 자동으로 따라감
 - Vditor 에셋을 앱에 포함해서 **인터넷 연결 없이** 동작 (한국어 UI)
 
@@ -23,12 +23,12 @@ Typora 스타일의 가벼운 마크다운 편집기입니다.
 
 | 단축키 | 동작 |
 | --- | --- |
-| `Ctrl+N` | 새 문서 (새 창, 사이드바의 ＋ 버튼과 같음) |
+| `Ctrl+N` | 새 문서 (새 창) |
 | `Ctrl+O` | 파일 열기 |
 | `Ctrl+Shift+O` | 폴더 열기 (사이드바) |
 | `Ctrl+S` | 저장 |
 | `Ctrl+Shift+S` | 다른 이름으로 저장 |
-| `Ctrl+P` | 인쇄 (사이드바의 🖨 버튼과 같음) |
+| `Ctrl+P` | 인쇄 |
 | `Ctrl+/` | IR ↔ 원문 모드 전환 |
 | `Ctrl+\` | 사이드바 보이기/숨기기 |
 | `F11` | 전체 화면 |
@@ -42,7 +42,7 @@ Typora 스타일의 가벼운 마크다운 편집기입니다.
 | ``Ctrl+Shift+` `` | 인라인 코드 |
 | `Ctrl+K` / `Ctrl+Shift+I` | 링크 / 이미지 |
 
-## 노트북(Windows)에서 실행하기
+## Windows에서 빌드하기
 
 ### 1. 준비물 설치 (처음 한 번만)
 
@@ -102,12 +102,12 @@ npm run tauri build
 
 완료되면 아래 위치에 설치 파일이 생깁니다.
 
-- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_0.3.1_x64-setup.exe`
-- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_0.3.1_x64_en-US.msi`
+- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_<버전>_x64-setup.exe`
+- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_<버전>_x64_en-US.msi`
 - 설치 없이 실행: `src-tauri\target\release\geuldam.exe`
 
 설치 프로그램으로 설치하면 `.md` 파일 연결이 등록됩니다.
-탐색기에서 `.md` 파일을 오른쪽 클릭 → **연결 프로그램** → **글담**를 선택하고
+탐색기에서 `.md` 파일을 오른쪽 클릭 → **연결 프로그램** → **글담**을 선택하고
 "항상 이 앱을 사용하여 .md 파일 열기"를 체크하면 더블클릭으로 열립니다.
 
 > MSI 빌드는 WiX 도구를, NSIS 빌드는 NSIS 도구를 Tauri가 처음 빌드할 때 자동으로 내려받습니다.
@@ -134,7 +134,7 @@ mdnote/
 ├─ scripts/copy-vditor.mjs # node_modules/vditor/dist → public/vditor/dist 복사
 ├─ vite.config.js
 └─ src-tauri/
-   ├─ src/lib.rs           # Rust 커맨드: read_file, write_file, list_md_tree, get_startup_file
+   ├─ src/lib.rs           # Rust 커맨드: 파일 읽기·쓰기, 폴더 트리, 시작 파일, 메뉴 열기
    ├─ tauri.conf.json      # 창, 번들(nsis/msi), 파일 연결 설정
    └─ capabilities/        # 권한 설정 (dialog 플러그인, 창 제목/닫기)
 ```
