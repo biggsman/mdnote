@@ -1,0 +1,295 @@
+:root {
+  --bg: #ffffff;
+  --fg: #333333;
+  --muted: #8a8f98;
+  --sidebar-bg: #f5f6f8;
+  --sidebar-border: #e3e5e8;
+  --hover: #e8eaee;
+  --active: #dbe6fb;
+  --accent: #3b78e7;
+  --status-bg: #fafafa;
+  font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1e1f22;
+  --fg: #d4d6db;
+  --muted: #868a93;
+  --sidebar-bg: #25262a;
+  --sidebar-border: #34363b;
+  --hover: #303237;
+  --active: #2f3f5c;
+  --accent: #6ea0ff;
+  --status-bg: #232428;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ---------- 사이드바 ---------- */
+#sidebar {
+  width: var(--sidebar-width, 180px);
+  flex: 0 0 var(--sidebar-width, 180px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  font-size: 13px;
+  user-select: none;
+}
+
+#app.sidebar-hidden #sidebar,
+#app.sidebar-hidden #sidebar-resizer { display: none; }
+
+/* 사이드바 경계를 끌어서 너비 조절 */
+#sidebar-resizer {
+  flex: 0 0 5px;
+  margin-left: -3px;
+  margin-right: -2px;
+  cursor: col-resize;
+  z-index: 2;
+}
+#sidebar-resizer:hover,
+#app.resizing #sidebar-resizer { background: var(--accent); opacity: 0.4; }
+#app.resizing { cursor: col-resize; user-select: none; }
+
+/* 사이드바 탭: 파일 | 개요 */
+.sidebar-tabs {
+  display: flex;
+  padding: 6px 12px 0;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+.sidebar-tab {
+  flex: 1;
+  padding: 8px 0 7px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sidebar-tab:hover { color: var(--fg); }
+.sidebar-tab.active {
+  color: var(--fg);
+  font-weight: 600;
+  border-bottom-color: var(--fg);
+}
+
+.sidebar-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-panel[hidden] { display: none; }
+
+/* 개요(목차) */
+.outline {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}
+.outline-item {
+  padding: 5px 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.outline-item:hover { background: var(--hover); }
+.outline-item.top { font-weight: 600; }
+.outline-empty {
+  padding: 20px 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* 사이드바 아래: 열린 폴더 이름 (누르면 다른 폴더 열기) */
+.folder-footer {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: none;
+  border-top: 1px solid var(--sidebar-border);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.folder-footer:hover { background: var(--hover); }
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.folder-name {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.icon-btn, .text-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  font: inherit;
+}
+.icon-btn { padding: 2px 6px; }
+.icon-btn:hover, .text-btn:hover { background: var(--hover); }
+.text-btn { padding: 6px 10px; color: var(--accent); }
+
+.tree {
+  flex: 1;
+  overflow: auto;
+  padding: 6px 0;
+}
+
+.tree-empty {
+  margin: auto 0;
+  padding: 20px 8px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-item:hover { background: var(--hover); }
+.tree-item.active { background: var(--active); }
+.tree-item .caret {
+  display: inline-block;
+  width: 12px;
+  color: var(--muted);
+  transition: transform 0.1s;
+}
+.tree-dir.collapsed > ul { display: none; }
+.tree-dir:not(.collapsed) > .tree-item .caret { transform: rotate(90deg); }
+.tree-item .label { overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 편집기 ---------- */
+#main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#vditor {
+  flex: 1;
+  min-height: 0;
+}
+
+.vditor {
+  border: none !important;
+}
+
+.vditor-toolbar { display: none !important; }
+
+.vditor-reset {
+  font-size: 16px !important;
+  line-height: 1.75;
+}
+
+#statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 24px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--status-bg);
+  border-top: 1px solid var(--sidebar-border);
+  user-select: none;
+}
+#statusbar .spacer { flex: 1; }
+#status-path {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#status-dirty { color: #d9822b; }
+#status-mode { cursor: pointer; }
+
+/* ---------- 인쇄 ---------- */
+#print-area { display: none; }
+
+@media print {
+  @page { margin: 18mm 16mm; }
+
+  html, body {
+    height: auto;
+    overflow: visible;
+    background: #fff !important;
+    color: #000;
+  }
+  #app { display: none !important; }
+
+  #print-area {
+    display: block;
+    color: #1f2328;
+    background: #fff;
+  }
+  #print-area.vditor-reset {
+    font-size: 11pt !important;
+    line-height: 1.7;
+  }
+  #print-area .vditor-copy { display: none !important; }
+  #print-area pre,
+  #print-area blockquote,
+  #print-area table,
+  #print-area img {
+    break-inside: avoid;
+  }
+  #print-area h1, #print-area h2, #print-area h3,
+  #print-area h4, #print-area h5, #print-area h6 {
+    break-after: avoid;
+  }
+  #print-area img { max-width: 100%; }
+}
+
+/* '열린 폴더가 없음.' 을 가운데에 */
+.tree:has(> .tree-empty) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

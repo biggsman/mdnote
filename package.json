@@ -1,0 +1,26 @@
+{
+  "name": "geuldam",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "scripts": {
+    "copy-vditor": "node scripts/copy-vditor.mjs",
+    "predev": "npm run copy-vditor",
+    "prebuild": "npm run copy-vditor",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-dialog": "^2.8.1",
+    "diff-match-patch": "^1.0.5",
+    "vditor": "~3.11.3"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1",
+    "less": "^4.9.1",
+    "vite": "^7.3.6"
+  }
+}
