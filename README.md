@@ -102,8 +102,8 @@ npm run tauri build
 
 완료되면 아래 위치에 설치 파일이 생깁니다.
 
-- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_0.3.0_x64-setup.exe`
-- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_0.3.0_x64_en-US.msi`
+- NSIS 설치 프로그램: `src-tauri\target\release\bundle\nsis\Geuldam_0.3.1_x64-setup.exe`
+- MSI 설치 프로그램: `src-tauri\target\release\bundle\msi\Geuldam_0.3.1_x64_en-US.msi`
 - 설치 없이 실행: `src-tauri\target\release\geuldam.exe`
 
 설치 프로그램으로 설치하면 `.md` 파일 연결이 등록됩니다.
