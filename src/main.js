@@ -1,7 +1,7 @@
 import Vditor from "vditor";
 import "vditor/dist/index.css";
 import "./style.css";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri, convertFileSrc } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
@@ -17,6 +17,8 @@ const MD_FILTERS = [
   { name: "모든 파일", extensions: ["*"] },
 ];
 const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
+const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"];
+const IMAGE_EXT = new RegExp(`\\.(${IMAGE_EXTS.join("|")})$`, "i");
 const SIDEBAR_KEY = "mdnote.sidebarHidden";
 const SIDEBAR_PANEL_KEY = "mdnote.sidebarPanel"; // "files" | "outline"
 // Alt+글자로 여는 메뉴 (파일·편집·본문·서식·보기·테마·도움말)
@@ -597,13 +599,89 @@ async function insertImage() {
   const file = await openDialog({
     multiple: false,
     directory: false,
-    filters: [{ name: "이미지", extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"] }],
+    filters: [{ name: "이미지", extensions: IMAGE_EXTS }],
     defaultPath: state.filePath ? dirname(state.filePath) : (state.folder ?? undefined),
   });
   if (!file) return;
-  const path = state.filePath ? relativePath(dirname(state.filePath), file) : file.replace(/\\/g, "/");
-  const alt = basename(file).replace(/\.[^.]+$/, "");
-  state.vditor.insertValue(`![${alt}](${path.replace(/ /g, "%20")})`);
+  insertImages([file]);
+}
+
+/** 이미지 파일들을 커서 위치에 넣는다. */
+function insertImages(files) {
+  const md = files.map((file) => {
+    // 문서 폴더 안의 이미지는 상대 경로, 그 밖은 절대 경로 (Typora 와 같게)
+    const path = state.filePath && isInside(file, dirname(state.filePath))
+      ? relativePath(dirname(state.filePath), file)
+      : file.replace(/\\/g, "/");
+    const alt = basename(file).replace(/\.[^.]+$/, "");
+    return `![${alt}](${path.replace(/ /g, "%20")})`;
+  });
+  state.vditor.focus();
+  state.vditor.insertValue(md.join("\n\n"));
+  scheduleInputCheck();
+}
+
+/* ---------------- 로컬 이미지 표시 ---------------- */
+
+/** 마크다운의 이미지 경로를 실제 파일 경로로 바꾼다. 로컬 파일이 아니면 null. */
+function localImagePath(src) {
+  if (!src || /^(https?|data|blob|asset):/i.test(src) || src.startsWith("//")) return null;
+  let path;
+  try {
+    path = decodeURI(src.replace(/^file:\/\/\/?/i, ""));
+  } catch {
+    path = src;
+  }
+  path = path.replace(/\\/g, "/");
+  if (/^[a-zA-Z]:\//.test(path)) return path; // C:/... 절대 경로
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path) || path.startsWith("/") || !state.filePath) return null;
+  const parts = dirname(state.filePath).replace(/\\/g, "/").split("/");
+  for (const seg of path.split("/")) {
+    if (seg === "..") parts.pop();
+    else if (seg && seg !== ".") parts.push(seg);
+  }
+  return parts.join("/");
+}
+
+/**
+ * 웹뷰는 로컬 파일을 직접 못 읽으므로 화면에 그릴 때만 img 주소를 asset 주소로 바꾼다.
+ * (저장되는 마크다운은 Vditor 가 원래 경로를 쓰므로 바뀌지 않는다)
+ */
+function fixLocalImage(img) {
+  const src = img.getAttribute("src");
+  if (!src || src === img.dataset.shown) return;
+  const path = localImagePath(src);
+  if (!path) return;
+  const url = convertFileSrc(path);
+  img.dataset.shown = url;
+  img.setAttribute("src", url);
+}
+
+function watchLocalImages() {
+  if (!isTauri()) return;
+  const fixAll = (root) => {
+    if (root.tagName === "IMG") fixLocalImage(root);
+    else root.querySelectorAll?.("img").forEach(fixLocalImage);
+  };
+  new MutationObserver((records) => {
+    for (const r of records) {
+      if (r.type === "attributes") fixLocalImage(r.target);
+      else r.addedNodes.forEach((n) => n.nodeType === 1 && fixAll(n));
+    }
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
+  fixAll(document.body);
+}
+
+/** 끌어다 놓은 위치로 커서를 옮긴다. (편집기 안일 때만) */
+function placeCaretAt(position) {
+  if (!position) return;
+  const ratio = window.devicePixelRatio || 1;
+  const range = document.caretRangeFromPoint?.(position.x / ratio, position.y / ratio);
+  const editor = state.vditor?.vditor?.element;
+  if (!range || !editor?.contains(range.startContainer)) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
 }
 
 /** 본문·서식 명령. 편집기에 포커스를 돌려준 뒤 적용한다. */
@@ -852,13 +930,23 @@ function bindEvents() {
     }
   });
 
-  // 파일이나 폴더를 창에 끌어다 놓으면 연다.
+  // 끌어다 놓기: 이미지는 놓은 위치에 삽입, .md 는 열기, 폴더는 사이드바에 열기. 그 밖의 파일은 무시.
   getCurrentWebview().onDragDropEvent((event) => {
     if (event.payload.type !== "drop") return;
     const paths = event.payload.paths ?? [];
+    const images = paths.filter((p) => IMAGE_EXT.test(p));
+    if (images.length) {
+      placeCaretAt(event.payload.position);
+      insertImages(images);
+      return;
+    }
     const md = paths.find((p) => MD_EXT.test(p));
-    if (md) actions.openPath(md);
-    else if (paths[0]) exclusive(setFolder)(paths[0]);
+    if (md) {
+      actions.openPath(md);
+      return;
+    }
+    const dir = paths.find((p) => !/\.[^\\/.]+$/.test(p));
+    if (dir) setFolder(dir).catch(() => {});
   });
 }
 
@@ -868,6 +956,7 @@ async function init() {
   const savedWidth = Number(storageGet(SIDEBAR_WIDTH_KEY));
   if (savedWidth) setSidebarWidth(savedWidth, false);
   bindSidebarResizer();
+  watchLocalImages();
   showSidebarPanel(storageGet(SIDEBAR_PANEL_KEY));
   bindEvents();
   if (appWindow) {
