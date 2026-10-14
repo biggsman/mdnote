@@ -9,6 +9,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plugin-dialog";
 import { installMenu } from "./menu.js";
 import { TOOLBAR_ITEMS, applyToolbar, applyHeading, wrapSelection, insertBlock } from "./format.js";
+import { buildHtml, buildPng, markdownToDom, buildDocx, buildRtf } from "./export.js";
 
 // scripts/copy-vditor.mjs 가 node_modules/vditor/dist 를 public/vditor/dist 로 복사한다.
 const VDITOR_CDN = "/vditor";
@@ -344,6 +345,15 @@ async function printDocument() {
     await message("인쇄할 내용이 없습니다.", { title: "글담", kind: "info" });
     return;
   }
+  await renderPrintArea(markdown);
+  // 머리글에 찍히는 제목은 파일 이름만 쓴다.
+  document.title = docName();
+  document.body.classList.add("printing");
+  window.print();
+}
+
+/** 문서를 인쇄·내보내기용(밝은 테마)으로 #print-area 에 그린다. */
+async function renderPrintArea(markdown) {
   const area = $("print-area");
   await new Promise((resolve) => {
     Vditor.preview(area, markdown, {
@@ -364,10 +374,63 @@ async function printDocument() {
       img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })),
     new Promise((r) => setTimeout(r, 500)),
   ]);
-  // 머리글에 찍히는 제목은 파일 이름만 쓴다.
-  document.title = docName();
-  document.body.classList.add("printing");
-  window.print();
+  return area;
+}
+
+/* ---------------- 내보내기 ---------------- */
+
+const EXPORTS = {
+  pdf: { ext: "pdf", label: "PDF" },
+  html: { ext: "html", label: "HTML" },
+  image: { ext: "png", label: "PNG 이미지" },
+  docx: { ext: "docx", label: "Word 문서" },
+  rtf: { ext: "rtf", label: "RTF 문서" },
+};
+
+/** 파일 → 내보내기. 문서와 같은 폴더·같은 이름을 기본값으로 묻는다. */
+async function exportDocument(kind) {
+  const spec = EXPORTS[kind];
+  const markdown = getValue();
+  if (markdown.trim() === "") {
+    await message("내보낼 내용이 없습니다.", { title: "글담", kind: "info" });
+    return;
+  }
+  const name = `${docName().replace(/\.[^.]+$/, "")}.${spec.ext}`;
+  const base = state.filePath ? dirname(state.filePath) : state.folder;
+  let path = await saveDialog({
+    filters: [{ name: spec.label, extensions: [spec.ext] }],
+    defaultPath: base ? `${base}${base.includes("\\") ? "\\" : "/"}${name}` : name,
+  });
+  if (!path) return;
+  if (!path.toLowerCase().endsWith(`.${spec.ext}`)) path += `.${spec.ext}`;
+
+  $("status-dirty").textContent = `${spec.label}(으)로 내보내는 중…`;
+  try {
+    if (kind === "docx" || kind === "rtf") {
+      const body = await markdownToDom(Vditor, markdown, VDITOR_CDN);
+      if (kind === "docx") await invoke("write_binary", { path, data: await buildDocx(body, localImagePath) });
+      else await invoke("write_file", { path, content: await buildRtf(body, localImagePath) });
+    } else {
+      const area = await renderPrintArea(markdown);
+      try {
+        if (kind === "pdf") {
+          await invoke("export_pdf", { path });
+        } else if (kind === "html") {
+          await invoke("write_file", { path, content: await buildHtml(area, docName(), localImagePath) });
+        } else {
+          area.classList.add("exporting");
+          await new Promise((r) => requestAnimationFrame(r));
+          await invoke("write_binary", { path, data: await buildPng(area) });
+        }
+      } finally {
+        area.classList.remove("exporting");
+        finishPrint();
+      }
+    }
+  } finally {
+    updateTitle();
+  }
+  await message(`내보냈습니다.\n${path}`, { title: "글담", kind: "info" });
 }
 
 function finishPrint() {
@@ -653,6 +716,7 @@ function fixLocalImage(img) {
   const path = localImagePath(src);
   if (!path) return;
   const url = convertFileSrc(path);
+  img.dataset.src0 = src; // 내보내기(HTML)에서 원래 경로를 쓰기 위해 남겨 둔다
   img.dataset.shown = url;
   img.setAttribute("src", url);
 }
@@ -761,6 +825,7 @@ const actions = {
   saveAs: exclusive(saveFileAs),
   toggleMode: exclusive(toggleMode),
   print: exclusive(printDocument),
+  exportAs: exclusive(exportDocument),
   toggleSidebar,
   toggleFullscreen,
 };
@@ -968,6 +1033,7 @@ async function init() {
         save: () => actions.save(),
         saveAs: () => actions.saveAs(),
         print: () => actions.print(),
+        exportAs: (kind) => actions.exportAs(kind),
         close: () => appWindow.close(),
         toggleSidebar: () => actions.toggleSidebar(),
         toggleMode: () => actions.toggleMode(),

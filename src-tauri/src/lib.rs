@@ -131,6 +131,70 @@ fn strip_verbatim(p: String) -> String {
     }
 }
 
+/// 내보내기용: 바이너리 파일을 base64 로 받아 저장한다. (docx, png 등)
+#[tauri::command]
+fn write_binary(path: String, data: String) -> Result<(), String> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data.as_bytes())
+        .map_err(|e| format!("잘못된 데이터입니다: {e}"))?;
+    fs::write(&path, bytes).map_err(|e| format!("파일을 저장할 수 없습니다 ({path}): {e}"))
+}
+
+/// 내보내기용: 파일(주로 이미지)을 base64 로 읽는다.
+#[tauri::command]
+fn read_binary(path: String) -> Result<String, String> {
+    use base64::Engine;
+    let bytes = fs::read(&path).map_err(|e| format!("파일을 읽을 수 없습니다 ({path}): {e}"))?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
+}
+
+/// 현재 화면을 인쇄용(@media print) 모양 그대로 PDF 로 저장한다. (WebView2 PrintToPdf)
+#[tauri::command]
+async fn export_pdf(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use std::sync::mpsc;
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2_7;
+        use webview2_com::PrintToPdfCompletedHandler;
+        use windows::core::{Interface, HSTRING};
+
+        let (tx, rx) = mpsc::channel::<Result<(), String>>();
+        let fail = tx.clone();
+        window
+            .with_webview(move |webview| {
+                let started = (|| -> windows::core::Result<()> {
+                    let core = unsafe { webview.controller().CoreWebView2()? };
+                    let core7: ICoreWebView2_7 = core.cast()?;
+                    let handler = PrintToPdfCompletedHandler::create(Box::new(move |result, ok| {
+                        let _ = tx.send(match result {
+                            Ok(()) if ok => Ok(()),
+                            Ok(()) => Err("PDF 를 저장하지 못했습니다.".to_string()),
+                            Err(e) => Err(format!("PDF 를 저장하지 못했습니다: {e}")),
+                        });
+                        Ok(())
+                    }));
+                    unsafe { core7.PrintToPdf(&HSTRING::from(path.as_str()), None, &handler) }
+                })();
+                if let Err(e) = started {
+                    let _ = fail.send(Err(format!("PDF 를 저장하지 못했습니다: {e}")));
+                }
+            })
+            .map_err(|e| e.to_string())?;
+        tauri::async_runtime::spawn_blocking(move || {
+            rx.recv_timeout(std::time::Duration::from_secs(120))
+                .unwrap_or_else(|_| Err("PDF 저장 시간이 초과되었습니다.".to_string()))
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (window, path);
+        Err("PDF 내보내기는 Windows 에서만 지원합니다.".to_string())
+    }
+}
+
 /// 편집기(웹뷰)에 포커스가 있으면 Alt+F 같은 메뉴 단축키가 창 메뉴줄로 가지 않으므로
 /// 창에 메뉴 키 메시지를 직접 보내 메뉴를 연다. key 가 비어 있으면 메뉴줄만 활성화한다.
 #[tauri::command]
@@ -153,7 +217,7 @@ fn open_menu(window: tauri::WebviewWindow, key: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file, open_menu])
+        .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file, open_menu, write_binary, read_binary, export_pdf])
         .run(tauri::generate_context!())
         .expect("글담 실행 중 오류가 발생했습니다");
 }
