@@ -253,6 +253,19 @@ html, body {
 /* ---------- 인쇄 ---------- */
 #print-area { display: none; }
 
+/* 이미지로 내보낼 때만 화면 밖에 그려 둔다 */
+#print-area.exporting {
+  display: block;
+  position: fixed;
+  left: -20000px;
+  top: 0;
+  width: 860px;
+  padding: 40px 32px;
+  box-sizing: border-box;
+  background: #fff;
+  color: #1f2328;
+}
+
 @media print {
   @page { margin: 18mm 16mm; }
 

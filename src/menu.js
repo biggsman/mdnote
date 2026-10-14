@@ -44,6 +44,17 @@ export async function installMenu(win, on, initial) {
           await item("저장", "Ctrl+S", on.save),
           await item("다른 이름으로 저장...", "Ctrl+Shift+S", on.saveAs),
           await sep(),
+          await Submenu.new({
+            text: "내보내기",
+            items: [
+              await item("PDF", null, () => on.exportAs("pdf")),
+              await item("HTML", null, () => on.exportAs("html")),
+              await item("이미지", null, () => on.exportAs("image")),
+              await sep(),
+              await item("Word (.docx)", null, () => on.exportAs("docx")),
+              await item("RTF", null, () => on.exportAs("rtf")),
+            ],
+          }),
           await item("인쇄...", "Ctrl+P", on.print),
           await sep(),
           await item("닫기", "Alt+F4", on.close),
