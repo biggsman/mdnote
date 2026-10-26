@@ -9,7 +9,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plugin-dialog";
 import { installMenu } from "./menu.js";
 import { TOOLBAR_ITEMS, applyToolbar, applyHeading, wrapSelection, insertBlock } from "./format.js";
-import { buildHtml, buildPng, markdownToDom, buildDocx, buildRtf } from "./export.js";
+import { buildHtml, buildPng, markdownToDom, buildDocx, buildRtf, buildText } from "./export.js";
 
 // scripts/copy-vditor.mjs 가 node_modules/vditor/dist 를 public/vditor/dist 로 복사한다.
 const VDITOR_CDN = "/vditor";
@@ -385,6 +385,7 @@ const EXPORTS = {
   image: { ext: "png", label: "PNG 이미지" },
   docx: { ext: "docx", label: "Word 문서" },
   rtf: { ext: "rtf", label: "RTF 문서" },
+  txt: { ext: "txt", label: "텍스트" },
 };
 
 /** 파일 → 내보내기. 문서와 같은 폴더·같은 이름을 기본값으로 묻는다. */
@@ -406,10 +407,11 @@ async function exportDocument(kind) {
 
   $("status-dirty").textContent = `${spec.label}(으)로 내보내는 중…`;
   try {
-    if (kind === "docx" || kind === "rtf") {
+    if (kind === "docx" || kind === "rtf" || kind === "txt") {
       const body = await markdownToDom(Vditor, markdown, VDITOR_CDN);
       if (kind === "docx") await invoke("write_binary", { path, data: await buildDocx(body, localImagePath) });
-      else await invoke("write_file", { path, content: await buildRtf(body, localImagePath) });
+      else if (kind === "rtf") await invoke("write_file", { path, content: await buildRtf(body, localImagePath) });
+      else await invoke("write_file", { path, content: buildText(body) });
     } else {
       const area = await renderPrintArea(markdown);
       try {
