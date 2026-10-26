@@ -53,6 +53,7 @@ export async function installMenu(win, on, initial) {
               await sep(),
               await item("Word (.docx)", null, () => on.exportAs("docx")),
               await item("RTF", null, () => on.exportAs("rtf")),
+              await item("텍스트 (.txt)", null, () => on.exportAs("txt")),
             ],
           }),
           await item("인쇄...", "Ctrl+P", on.print),

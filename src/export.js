@@ -164,6 +164,89 @@ export async function markdownToDom(VditorClass, markdown, cdn) {
   return new DOMParser().parseFromString(`<body>${html}</body>`, "text/html").body;
 }
 
+/* ---------------- 텍스트 (.txt) ---------------- */
+
+/**
+ * 마크다운 기호(#, **, >, ``` 등)를 모두 없앤 순수 텍스트를 만든다.
+ * 목록은 •, 번호, ☐/☑ 로, 표는 탭으로 구분한 줄로 바꾼다. 줄바꿈은 Windows 형식(CRLF).
+ */
+export function buildText(body) {
+  const blocks = [];
+
+  /** 인라인 요소의 글자만 (링크는 글자만, 그림은 생략) */
+  function inline(node) {
+    let s = "";
+    for (const n of node.childNodes) {
+      if (n.nodeType === Node.TEXT_NODE) s += n.textContent;
+      else if (n.nodeType !== Node.ELEMENT_NODE) continue;
+      else {
+        const tag = n.tagName.toLowerCase();
+        if (tag === "br") s += "\n";
+        else if (tag === "img") continue;
+        else if (tag === "input" && n.getAttribute("type") === "checkbox") s += n.hasAttribute("checked") ? "☑ " : "☐ ";
+        else s += inline(n);
+      }
+    }
+    return s;
+  }
+
+  const clean = (s) => s.replace(/[ \t]*\n[ \t]*/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
+
+  function list(n, depth) {
+    const lines = [];
+    let i = 0;
+    for (const li of n.children) {
+      if (li.tagName.toLowerCase() !== "li") continue;
+      i++;
+      const own = document.createElement("div");
+      const nested = [];
+      for (const c of [...li.childNodes]) {
+        const t = c.tagName?.toLowerCase();
+        if (t === "ul" || t === "ol") nested.push(c);
+        else if (t === "p") own.append(...c.cloneNode(true).childNodes, " ");
+        else own.append(c.cloneNode(true));
+      }
+      const isTask = !!own.querySelector('input[type="checkbox"]');
+      const mark = isTask ? "" : n.tagName.toLowerCase() === "ol" ? `${i}. ` : "• ";
+      lines.push(`${"    ".repeat(depth)}${mark}${clean(inline(own))}`);
+      for (const sub of nested) lines.push(...list(sub, depth + 1));
+    }
+    return lines;
+  }
+
+  function block(n) {
+    const tag = n.tagName?.toLowerCase();
+    if (!tag) {
+      const text = clean(n.textContent);
+      if (text) blocks.push(text);
+      return;
+    }
+    if (/^h[1-6]$/.test(tag) || tag === "p") {
+      const text = clean(inline(n));
+      if (text) blocks.push(text);
+    } else if (tag === "ul" || tag === "ol") {
+      blocks.push(list(n, 0).join("\n"));
+    } else if (tag === "blockquote") {
+      for (const c of n.children) block(c);
+    } else if (tag === "pre") {
+      blocks.push(n.textContent.replace(/\n$/, ""));
+    } else if (tag === "table") {
+      const rows = [...n.querySelectorAll("tr")].map((tr) => [...tr.children].map((c) => clean(inline(c))).join("\t"));
+      if (rows.length) blocks.push(rows.join("\n"));
+    } else if (tag === "hr") {
+      // 구분선은 빈 줄로만 남긴다.
+    } else if (tag === "div" || tag === "section" || tag === "details") {
+      for (const c of n.childNodes) block(c);
+    } else {
+      const text = clean(inline(n));
+      if (text) blocks.push(text);
+    }
+  }
+
+  for (const n of body.childNodes) block(n);
+  return `${blocks.join("\n\n")}\n`.replace(/\r?\n/g, "\r\n");
+}
+
 /* ---------------- Word (.docx) ---------------- */
 
 const CODE_FONT = "Consolas";
