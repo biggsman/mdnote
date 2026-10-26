@@ -190,7 +190,14 @@ export function buildText(body) {
     return s;
   }
 
-  const clean = (s) => s.replace(/[ \t]*\n[ \t]*/g, "\n").replace(/[ \t]{2,}/g, " ").trim();
+  // 문단·제목 글자 정리. 띄어쓰기 없이 쓴 제목(#제목)처럼 마크다운이 제목으로 보지 않은 줄의 # 도 지운다.
+  // (코드 블록에는 쓰지 않는다)
+  const clean = (s) => s
+    .replace(/\uFEFF/g, "")
+    .replace(/[ \t]*\n[ \t]*/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim()
+    .replace(/^#{1,6}[ \t]*/gm, "");
 
   function list(n, depth) {
     const lines = [];
