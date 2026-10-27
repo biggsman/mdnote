@@ -1,73 +1,76 @@
 # 글담 (Geuldam)
 
-Typora 스타일의 가벼운 마크다운 편집기입니다.
-[Tauri 2](https://tauri.app) + Vite(바닐라 JS)로 만들었습니다.
-편집기는 [Vditor](https://github.com/Vanessa219/vditor) 3.11.3(MIT)의 소스를 가져와 `src/vditor` 에서 글담에 맞게 고쳐 씁니다.
+**English** | [한국어](README.ko.md)
 
-## 기능
+A lightweight, Typora-style Markdown editor for Windows.
+Built with [Tauri 2](https://tauri.app) + Vite (vanilla JS).
+The editor is based on the source of [Vditor](https://github.com/Vanessa219/vditor) 3.11.3 (MIT), adapted for Geuldam in `src/vditor`.
+The user interface is in Korean.
 
-- 입력하는 즉시 서식이 반영되는 IR(Instant Rendering) 편집, `Ctrl+/`로 원문(마크다운 소스) 편집과 전환
-- 새 문서(새 창으로 열려 여러 문서를 동시에 편집) / 열기 / 저장 / 다른 이름으로 저장
-- 왼쪽 사이드바에 열린 파일이 있는 폴더의 `.md` 파일 트리 표시 (아래쪽 폴더 이름을 눌러 다른 폴더 열기)
-- 제목 표시줄·상태 표시줄에 **저장 안 됨(●)** 표시, 새 문서/다른 파일 열기/창 닫기 전에 저장 여부 확인
-- `.md`, `.markdown` 파일 연결 — 탐색기에서 더블클릭하면 글담으로 열림
-- 인쇄 — 편집 화면 대신 문서 내용만 밝은 테마로 깔끔하게 인쇄 (PDF로 저장도 가능)
-- 내보내기 — PDF, HTML(그림 포함 파일 하나), 이미지(PNG), Word(.docx), RTF, 텍스트(.txt, 마크다운 기호 없는 순수 텍스트)
-- 창 위쪽 메뉴줄: 파일(F) · 편집(E) · 본문(P) · 서식(O) · 보기(V) · 테마(T) · 도움말(H)
-- 사이드바 탭: 파일(폴더 트리) / 개요(문서 제목 목록, 클릭하면 이동)
-- 표 편집 도구 — 표 안에 커서를 두면 표 위에 나타남: 표 크기 조정, 정렬, 행·열 삽입/이동/삭제, 표 복사, 표 삭제
-- 테마 선택: 시스템 설정 따르기 / 밝게 / 어둡게 (모든 창에 함께 적용)
-- 파일·폴더를 창에 끌어다 놓아서 열기, 이미지를 끌어다 놓으면 그 위치에 삽입
-- Windows 시스템 다크 모드를 자동으로 따라감
-- Vditor 에셋을 앱에 포함해서 **인터넷 연결 없이** 동작 (한국어 UI)
+## Features
 
-### 단축키
+- Instant-rendering (IR) editing where formatting appears as you type; `Ctrl+/` switches to raw Markdown source
+- New document (opens in a new window, so several documents can be edited at once) / Open / Save / Save As
+- Left sidebar shows the `.md` file tree of the folder containing the open file (click the folder name at the bottom to open another folder)
+- **Unsaved (●)** indicator in the title bar and status bar; asks before discarding changes when opening another file or closing a window
+- `.md` / `.markdown` file association — double-click in Explorer to open in Geuldam
+- Print — prints only the document content in a clean light theme (can also save as PDF)
+- Export — PDF, HTML (single file with images embedded), image (PNG), Word (.docx), RTF, plain text (.txt, Markdown symbols removed)
+- Menu bar: File · Edit · Paragraph · Format · View · Theme · Help
+- Sidebar tabs: Files (folder tree) / Outline (document headings, click to jump)
+- Table toolbar — appears above a table when the cursor is inside it: resize, alignment, insert/move/delete rows and columns, copy table, delete table
+- Theme: follow system / light / dark (applied to all windows)
+- Drag and drop files or folders onto the window to open them; drop images to insert them at that position
+- Follows Windows dark mode automatically
+- Editor assets are bundled, so it works **fully offline**
 
-| 단축키 | 동작 |
+### Keyboard shortcuts
+
+| Shortcut | Action |
 | --- | --- |
-| `Ctrl+N` | 새 문서 (새 창) |
-| `Ctrl+O` | 파일 열기 |
-| `Ctrl+Shift+O` | 폴더 열기 (사이드바) |
-| `Ctrl+S` | 저장 |
-| `Ctrl+Shift+S` | 다른 이름으로 저장 |
-| `Ctrl+P` | 인쇄 |
-| `Ctrl+/` | IR ↔ 원문 모드 전환 |
-| `Ctrl+\` | 사이드바 보이기/숨기기 |
-| `F11` | 전체 화면 |
-| `Ctrl+1`~`Ctrl+6` / `Ctrl+0` | 제목 1~6 / 본문 |
-| `Ctrl+T` | 표 삽입 |
-| `Ctrl+Enter` (표 안) | 아래에 행 삽입 |
-| `Alt+↑`/`Alt+↓`, `Alt+←`/`Alt+→` (표 안) | 행 위/아래로 이동, 열 왼쪽/오른쪽으로 이동 |
-| `Ctrl+Shift+K` / `Ctrl+Shift+M` | 코드 블록 / 수식 블록 |
-| `Ctrl+Shift+Q` | 인용 |
-| `Ctrl+Shift+[` / `Ctrl+Shift+]` | 번호 목록 / 글머리 기호 목록 |
-| `Ctrl+B` / `Ctrl+I` / `Ctrl+U` | 굵게 / 기울임 / 밑줄 |
-| `Alt+Shift+5` | 취소선 |
-| ``Ctrl+Shift+` `` | 인라인 코드 |
-| `Ctrl+K` / `Ctrl+Shift+I` | 링크 / 이미지 |
+| `Ctrl+N` | New document (new window) |
+| `Ctrl+O` | Open file |
+| `Ctrl+Shift+O` | Open folder (sidebar) |
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` | Save As |
+| `Ctrl+P` | Print |
+| `Ctrl+/` | Toggle IR ↔ source mode |
+| `Ctrl+\` | Show/hide sidebar |
+| `F11` | Full screen |
+| `Ctrl+1`–`Ctrl+6` / `Ctrl+0` | Heading 1–6 / paragraph |
+| `Ctrl+T` | Insert table |
+| `Ctrl+Enter` (in a table) | Insert row below |
+| `Alt+↑`/`Alt+↓`, `Alt+←`/`Alt+→` (in a table) | Move row up/down, move column left/right |
+| `Ctrl+Shift+K` / `Ctrl+Shift+M` | Code block / math block |
+| `Ctrl+Shift+Q` | Quote |
+| `Ctrl+Shift+[` / `Ctrl+Shift+]` | Numbered list / bulleted list |
+| `Ctrl+B` / `Ctrl+I` / `Ctrl+U` | Bold / italic / underline |
+| `Alt+Shift+5` | Strikethrough |
+| ``Ctrl+Shift+` `` | Inline code |
+| `Ctrl+K` / `Ctrl+Shift+I` | Link / image |
 
-## Windows에서 빌드하기
+## Building on Windows
 
-### 1. 준비물 설치 (처음 한 번만)
+### 1. Install prerequisites (once)
 
 1. **Microsoft C++ Build Tools**
-   - <https://visualstudio.microsoft.com/visual-cpp-build-tools/> 에서 설치 프로그램을 받아 실행합니다.
-   - **"C++를 사용한 데스크톱 개발"** 워크로드를 체크하고 설치합니다.
-2. **WebView2 런타임**
-   - Windows 10(최신 업데이트)과 Windows 11에는 이미 설치되어 있습니다.
-   - 없다면 <https://developer.microsoft.com/microsoft-edge/webview2/> 에서 "Evergreen Bootstrapper"를 설치합니다.
+   - Download and run the installer from <https://visualstudio.microsoft.com/visual-cpp-build-tools/>.
+   - Select the **"Desktop development with C++"** workload.
+2. **WebView2 Runtime**
+   - Already included in up-to-date Windows 10 and Windows 11.
+   - Otherwise install the "Evergreen Bootstrapper" from <https://developer.microsoft.com/microsoft-edge/webview2/>.
 3. **Rust**
-   - <https://www.rust-lang.org/ko/tools/install> 에서 `rustup-init.exe`를 받아 실행하고 기본값(1번)으로 설치합니다.
-   - 설치 후 새 터미널에서 `rustc --version`이 나오면 됩니다.
-4. **Node.js** (LTS, 20 이상)
-   - <https://nodejs.org/ko> 에서 LTS 버전을 설치합니다.
-   - 새 터미널에서 `node -v`, `npm -v`가 나오면 됩니다.
-5. **Git** (소스를 받을 때 필요)
+   - Download `rustup-init.exe` from <https://www.rust-lang.org/tools/install> and install with the defaults.
+   - `rustc --version` in a new terminal should print a version.
+4. **Node.js** (LTS, 20 or later)
+   - Install the LTS version from <https://nodejs.org>.
+   - `node -v` and `npm -v` in a new terminal should print versions.
+5. **Git**
    - <https://git-scm.com/download/win>
 
-> 설치 후에는 PowerShell(또는 터미널)을 **새로 열어야** PATH가 반영됩니다.
+> Open a **new** PowerShell (or terminal) window after installing so the PATH changes take effect.
 
-또는 `winget`으로 한 번에 설치할 수도 있습니다 (관리자 PowerShell):
+Or install everything with `winget` (administrator PowerShell):
 
 ```powershell
 winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
@@ -76,7 +79,7 @@ winget install OpenJS.NodeJS.LTS
 winget install Git.Git
 ```
 
-### 2. 소스 받기와 의존성 설치
+### 2. Get the source and install dependencies
 
 ```powershell
 git clone https://github.com/biggsman/mdnote.git
@@ -84,55 +87,61 @@ cd mdnote
 npm install
 ```
 
-### 3. 개발 모드로 실행
+### 3. Run in development mode
 
 ```powershell
 npm run tauri dev
 ```
 
-처음에는 Rust 크레이트를 컴파일하느라 몇 분 걸립니다. 이후에는 빠르게 뜹니다.
-`src/` 아래 파일을 고치면 창이 자동으로 새로 고쳐집니다.
+The first run takes a few minutes to compile the Rust crates; later runs start quickly.
+Editing files under `src/` reloads the window automatically.
 
-### 문제 해결
+### Troubleshooting
 
-- **`link.exe`를 찾을 수 없음** → C++ Build Tools의 "C++를 사용한 데스크톱 개발"이 설치되지 않은 것입니다. 1번을 다시 확인하세요.
-- **`cargo`/`npm` 명령을 찾을 수 없음** → 터미널을 새로 열거나 재부팅합니다.
-- **창이 하얗게만 나옴** → WebView2 런타임을 설치(또는 복구)합니다.
-- **편집기가 뜨지 않음** → `public\vditor` 폴더가 있는지 확인합니다. 없다면 `npm run copy-vditor`를 실행합니다.
+- **`link.exe` not found** → "Desktop development with C++" in the C++ Build Tools is not installed. Check step 1.
+- **`cargo`/`npm` not found** → open a new terminal or restart the PC.
+- **The window is blank/white** → install (or repair) the WebView2 Runtime.
+- **The editor does not appear** → check that the `public\vditor` folder exists. If not, run `npm run copy-vditor`.
 
-## 프로젝트 구조
+## Project structure
 
 ```
 mdnote/
-├─ index.html              # 화면 뼈대 (사이드바 + 편집기 + 상태 표시줄)
+├─ index.html              # Page skeleton (sidebar + editor + status bar)
 ├─ src/
-│  ├─ main.js              # 파일 작업, 단축키, 사이드바, 개요, 인쇄
-│  ├─ menu.js              # 창 메뉴줄
-│  ├─ format.js            # 본문·서식 명령
+│  ├─ main.js              # File operations, shortcuts, sidebar, outline, printing
+│  ├─ menu.js              # Window menu bar
+│  ├─ format.js            # Paragraph and format commands
+│  ├─ export.js            # Export (PDF, HTML, image, Word, RTF, text)
+│  ├─ table.js             # Table toolbar
 │  ├─ style.css
-│  └─ vditor/              # 편집기 소스 (Vditor 3.11.3 기반, 글담에서 고쳐 씀)
-├─ scripts/copy-vditor.mjs # node_modules/vditor/dist → public/vditor/dist 복사
+│  └─ vditor/              # Editor source (based on Vditor 3.11.3, modified for Geuldam)
+├─ scripts/copy-vditor.mjs # Copies node_modules/vditor/dist → public/vditor/dist
 ├─ vite.config.js
 └─ src-tauri/
-   ├─ src/lib.rs           # Rust 커맨드: 파일 읽기·쓰기, 폴더 트리, 시작 파일, 메뉴 열기
-   ├─ tauri.conf.json      # 창, 번들(nsis/msi), 파일 연결 설정
-   └─ capabilities/        # 권한 설정 (dialog 플러그인, 창 제목/닫기)
+   ├─ src/lib.rs           # Rust commands: file read/write, folder tree, startup file, menu, PDF export
+   ├─ tauri.conf.json      # Window, bundles (nsis/msi), file association
+   └─ capabilities/        # Permissions (dialog plugin, window title/close)
 ```
 
-### 오프라인 에셋
+### Offline assets
 
-Vditor는 기본적으로 CDN(unpkg)에서 lute 파서, 한국어 언어 팩, 아이콘, 테마 CSS 등을 불러옵니다.
-`npm run dev`/`npm run build` 직전에 `scripts/copy-vditor.mjs`가 실행되어
-`node_modules/vditor/dist`를 `public/vditor/dist`로 복사하고, 편집기는 `cdn: "/vditor"`로 이 로컬 에셋만 사용합니다.
-`public/vditor`는 빌드 산출물이므로 Git에 올리지 않습니다.
+By default Vditor loads the Lute parser, language packs, icons and theme CSS from a CDN (unpkg).
+Right before `npm run dev` / `npm run build`, `scripts/copy-vditor.mjs` copies
+`node_modules/vditor/dist` to `public/vditor/dist`, and the editor uses only these local assets via `cdn: "/vditor"`.
+`public/vditor` is a build artifact and is not committed to Git.
 
-### 리눅스에서 확인
+### Checking on Linux
 
 ```bash
-# Tauri 빌드 의존성 (Debian/Ubuntu)
+# Tauri build dependencies (Debian/Ubuntu)
 sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libssl-dev build-essential pkg-config
 
 npm install
-npm run build              # 프런트엔드 빌드
+npm run build              # frontend build
 (cd src-tauri && cargo check)
 ```
+
+## License
+
+The Vditor source in `src/vditor` is MIT licensed (see `src/vditor/LICENSE`).
