@@ -10,6 +10,7 @@ import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plu
 import { installMenu } from "./menu.js";
 import { TOOLBAR_ITEMS, applyToolbar, applyHeading, wrapSelection, insertBlock } from "./format.js";
 import { buildHtml, buildPng, markdownToDom, buildDocx, buildRtf, buildText } from "./export.js";
+import { installTableTools } from "./table.js";
 
 // scripts/copy-vditor.mjs 가 node_modules/vditor/dist 를 public/vditor/dist 로 복사한다.
 const VDITOR_CDN = "/vditor";
@@ -874,7 +875,14 @@ function formatShortcut(e) {
   }
 }
 
+let tableTools = null;
+
 function onKeyDown(e) {
+  if (tableTools?.handleKey(e)) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   altAlone = e.code === "AltLeft" && !e.repeat && !e.ctrlKey && !e.shiftKey && !e.metaKey;
   if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && MENU_KEYS[e.code]) {
     e.preventDefault();
@@ -1024,6 +1032,8 @@ async function init() {
   if (savedWidth) setSidebarWidth(savedWidth, false);
   bindSidebarResizer();
   watchLocalImages();
+  // 표 안에 커서가 있으면 표 위에 편집 도구를 띄운다.
+  tableTools = installTableTools({ getVditor: () => state.vditor, onChange: () => scheduleInputCheck() });
   showSidebarPanel(storageGet(SIDEBAR_PANEL_KEY));
   bindEvents();
   if (appWindow) {
