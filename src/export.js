@@ -1,6 +1,7 @@
 // 파일 → 내보내기 (PDF, HTML, 이미지, Word, RTF)
 // 모두 인터넷 없이 프로그램 안에서 변환한다.
 import { invoke } from "@tauri-apps/api/core";
+import { t } from "./i18n.js";
 import { toPng } from "html-to-image";
 import {
   AlignmentType, BorderStyle, Document, ExternalHyperlink, HeadingLevel, ImageRun,
@@ -290,7 +291,7 @@ export async function buildDocx(body, resolveLocal) {
       } else if (tag === "img") {
         const png = await imageAsPng(n.getAttribute("src"), resolveLocal);
         if (png) out.push(new ImageRun({ type: "png", data: png.bytes, transformation: fit(png.width, png.height, 600) }));
-        else out.push(new TextRun({ text: `[그림: ${n.getAttribute("alt") ?? ""}]`, italics: true }));
+        else out.push(new TextRun({ text: t("export.imageAlt", { alt: n.getAttribute("alt") ?? "" }), italics: true }));
       } else if (tag === "input" && n.getAttribute("type") === "checkbox") {
         out.push(new TextRun({ text: n.hasAttribute("checked") ? "☑ " : "☐ ", ...style }));
       } else out.push(...(await runs(n, style)));
@@ -446,7 +447,7 @@ export async function buildRtf(body, resolveLocal) {
         if (png) {
           const size = fit(png.width, png.height, 600);
           s += `{\\pict\\pngblip\\picw${png.width}\\pich${png.height}\\picwgoal${size.width * 15}\\pichgoal${size.height * 15} ${bytesToHex(png.bytes)}}`;
-        } else s += `{\\i [그림: ${rtfText(n.getAttribute("alt") ?? "")}]}`;
+        } else s += `{\\i ${rtfText(t("export.imageAlt", { alt: n.getAttribute("alt") ?? "" }))}}`;
       } else if (tag === "input" && n.getAttribute("type") === "checkbox") {
         s += rtfText(n.hasAttribute("checked") ? "☑ " : "☐ ");
       } else s += await inline(n);

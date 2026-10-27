@@ -3,6 +3,7 @@
 //   [표 크기] [왼쪽·가운데·오른쪽 정렬]            [더 많은 동작 ⋮] [표 삭제]
 // 표를 마크다운 칸 데이터로 읽어 바꾼 뒤 다시 그리는 방식이라 IR 화면과 저장 내용이 항상 같다.
 import { execAfterRender } from "./vditor/ts/util/fixBrowserBehavior";
+import { t } from "./i18n.js";
 
 const svg = (body) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const ICON = {
@@ -14,24 +15,25 @@ const ICON = {
   trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
 };
 
+/** [동작, 단축키] — 이름은 i18n 의 table.<동작> */
 const MENU = [
-  ["rowAbove", "앞에 행 삽입", ""],
-  ["rowBelow", "뒤에 행 삽입", "Ctrl+Enter"],
-  ["colLeft", "앞에 열 삽입", ""],
-  ["colRight", "뒤에 열 삽입", ""],
+  ["rowAbove", ""],
+  ["rowBelow", "Ctrl+Enter"],
+  ["colLeft", ""],
+  ["colRight", ""],
   null,
-  ["rowUp", "행 위로 이동", "Alt+↑"],
-  ["rowDown", "행 아래로 이동", "Alt+↓"],
-  ["colMoveLeft", "열 왼쪽으로 이동", "Alt+←"],
-  ["colMoveRight", "열 오른쪽으로 이동", "Alt+→"],
+  ["rowUp", "Alt+↑"],
+  ["rowDown", "Alt+↓"],
+  ["colMoveLeft", "Alt+←"],
+  ["colMoveRight", "Alt+→"],
   null,
-  ["deleteRow", "행 삭제", ""],
-  ["deleteCol", "열 삭제", ""],
+  ["deleteRow", ""],
+  ["deleteCol", ""],
   null,
-  ["copy", "표 복사", ""],
-  ["pretty", "소스코드 이쁘게 하기", ""],
+  ["copy", ""],
+  ["pretty", ""],
   null,
-  ["deleteTable", "표 삭제", ""],
+  ["deleteTable", ""],
 ];
 
 /* ---------------- 표 ↔ 칸 데이터 ---------------- */
@@ -88,24 +90,29 @@ export function installTableTools({ getVditor, onChange }) {
   const bar = document.createElement("div");
   bar.className = "gd-table-bar";
   bar.hidden = true;
-  bar.innerHTML = `
-    <div class="gd-tb-group">
-      <button data-act="resize" title="표 크기 조정">${ICON.grid}</button>
-      <button data-act="align-left" title="왼쪽 정렬">${ICON.left}</button>
-      <button data-act="align-center" title="가운데 정렬">${ICON.center}</button>
-      <button data-act="align-right" title="오른쪽 정렬">${ICON.right}</button>
-    </div>
-    <div class="gd-tb-group">
-      <button data-act="more" class="gd-tb-more" title="더 많은 동작">더 많은 동작 ${ICON.more}</button>
-      <button data-act="deleteTable" title="표 삭제">${ICON.trash}</button>
-    </div>`;
 
   const menu = document.createElement("div");
   menu.className = "gd-table-pop gd-table-menu";
   menu.hidden = true;
-  menu.innerHTML = MENU.map((m) => (m
-    ? `<button data-act="${m[0]}"><span>${m[1]}</span><kbd>${m[2]}</kbd></button>`
-    : `<hr>`)).join("");
+
+  /** 도구 막대와 메뉴의 글자를 현재 언어로 다시 쓴다. */
+  function relabel() {
+    bar.innerHTML = `
+      <div class="gd-tb-group">
+        <button data-act="resize" title="${t("table.resize")}">${ICON.grid}</button>
+        <button data-act="align-left" title="${t("table.alignLeft")}">${ICON.left}</button>
+        <button data-act="align-center" title="${t("table.alignCenter")}">${ICON.center}</button>
+        <button data-act="align-right" title="${t("table.alignRight")}">${ICON.right}</button>
+      </div>
+      <div class="gd-tb-group">
+        <button data-act="more" class="gd-tb-more" title="${t("table.more")}">${t("table.more")} ${ICON.more}</button>
+        <button data-act="deleteTable" title="${t("table.deleteTable")}">${ICON.trash}</button>
+      </div>`;
+    menu.innerHTML = MENU.map((m) => (m
+      ? `<button data-act="${m[0]}"><span>${t(`table.${m[0]}`)}</span><kbd>${m[1]}</kbd></button>`
+      : `<hr>`)).join("");
+  }
+  relabel();
 
   const sizer = document.createElement("div");
   sizer.className = "gd-table-pop gd-table-sizer";
@@ -254,8 +261,8 @@ export function installTableTools({ getVditor, onChange }) {
           `<i data-r="${Math.floor(i / gridCols) + 1}" data-c="${(i % gridCols) + 1}"></i>`).join("")}
       </div>
       <div class="gd-sizer-input">
-        <input type="number" min="1" max="50" value="${cur.cols}" data-k="cols" title="열"> x
-        <input type="number" min="1" max="200" value="${cur.rows}" data-k="rows" title="행">
+        <input type="number" min="1" max="50" value="${cur.cols}" data-k="cols" title="${t("table.cols")}"> x
+        <input type="number" min="1" max="200" value="${cur.rows}" data-k="rows" title="${t("table.rows")}">
       </div>`;
     const paint = (rows, cols) => {
       for (const cell of sizer.querySelectorAll("i")) {
@@ -400,5 +407,9 @@ export function installTableTools({ getVditor, onChange }) {
     return true;
   }
 
-  return { handleKey, refresh: () => { hidePopups(); refresh(); } };
+  return {
+    handleKey,
+    refresh: () => { hidePopups(); refresh(); },
+    relabel: () => { hidePopups(); relabel(); },
+  };
 }

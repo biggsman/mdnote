@@ -5,7 +5,7 @@
 A lightweight, Typora-style Markdown editor for Windows.
 Built with [Tauri 2](https://tauri.app) + Vite (vanilla JS).
 The editor is based on the source of [Vditor](https://github.com/Vanessa219/vditor) 3.11.3 (MIT), adapted for Geuldam in `src/vditor`.
-The user interface is in Korean.
+The user interface is available in Korean and English.
 
 ## Features
 
@@ -20,6 +20,7 @@ The user interface is in Korean.
 - Sidebar tabs: Files (folder tree) / Outline (document headings, click to jump)
 - Table toolbar — appears above a table when the cursor is inside it: resize, alignment, insert/move/delete rows and columns, copy table, delete table
 - Theme: follow system / light / dark (applied to all windows)
+- UI language: switch between Korean and English in View → Language (applied to all windows)
 - Drag and drop files or folders onto the window to open them; drop images to insert them at that position
 - Follows Windows dark mode automatically
 - Editor assets are bundled, so it works **fully offline**
@@ -114,6 +115,7 @@ mdnote/
 │  ├─ format.js            # Paragraph and format commands
 │  ├─ export.js            # Export (PDF, HTML, image, Word, RTF, text)
 │  ├─ table.js             # Table toolbar
+│  ├─ i18n.js              # UI strings (Korean / English)
 │  ├─ style.css
 │  └─ vditor/              # Editor source (based on Vditor 3.11.3, modified for Geuldam)
 ├─ scripts/copy-vditor.mjs # Copies node_modules/vditor/dist → public/vditor/dist
