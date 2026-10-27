@@ -10,20 +10,20 @@
     <div id="app">
       <aside id="sidebar">
         <div class="sidebar-tabs">
-          <button class="sidebar-tab active" data-panel="files">파일</button>
-          <button class="sidebar-tab" data-panel="outline">개요</button>
+          <button class="sidebar-tab active" data-panel="files" data-i18n="tabFiles">파일</button>
+          <button class="sidebar-tab" data-panel="outline" data-i18n="tabOutline">개요</button>
         </div>
         <div id="panel-files" class="sidebar-panel">
         <div id="tree" class="tree">
-          <div class="tree-empty">열린 폴더가 없음.</div>
+          <div class="tree-empty" data-i18n="noFolder">열린 폴더가 없음.</div>
         </div>
-        <button id="folder-footer" class="folder-footer" title="다른 폴더 열기 (Ctrl+Shift+O)">폴더 열기...</button>
+        <button id="folder-footer" class="folder-footer" title="폴더 열기 (Ctrl+Shift+O)">폴더 열기...</button>
         </div>
         <div id="panel-outline" class="sidebar-panel" hidden>
           <div id="outline" class="outline"></div>
         </div>
       </aside>
-      <div id="sidebar-resizer" title="끌어서 너비 조절 (더블클릭: 기본값)"></div>
+      <div id="sidebar-resizer" data-i18n-title="resizerTip" title="끌어서 너비 조절 (더블클릭: 기본값)"></div>
       <main id="main">
         <div id="vditor"></div>
         <footer id="statusbar">
@@ -31,7 +31,7 @@
           <span class="spacer"></span>
           <span id="status-dirty"></span>
           <span id="status-count"></span>
-          <span id="status-mode" title="Ctrl+/ 로 전환">IR</span>
+          <span id="status-mode" data-i18n-title="modeTip" title="Ctrl+/ 로 전환">IR</span>
         </footer>
       </main>
     </div>

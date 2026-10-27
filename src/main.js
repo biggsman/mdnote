@@ -11,12 +11,13 @@ import { installMenu } from "./menu.js";
 import { TOOLBAR_ITEMS, applyToolbar, applyHeading, wrapSelection, insertBlock } from "./format.js";
 import { buildHtml, buildPng, markdownToDom, buildDocx, buildRtf, buildText } from "./export.js";
 import { installTableTools } from "./table.js";
+import { t, getLang, setLang, reloadLang, LANG_KEY } from "./i18n.js";
 
 // scripts/copy-vditor.mjs 가 node_modules/vditor/dist 를 public/vditor/dist 로 복사한다.
 const VDITOR_CDN = "/vditor";
-const MD_FILTERS = [
+const mdFilters = () => [
   { name: "Markdown", extensions: ["md", "markdown"] },
-  { name: "모든 파일", extensions: ["*"] },
+  { name: t("allFiles"), extensions: ["*"] },
 ];
 const MD_EXT = /\.(md|markdown|mdown|mkd)$/i;
 const IMAGE_EXTS = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"];
@@ -50,7 +51,7 @@ const appWindow = isTauri() ? getCurrentWindow() : null;
 
 const basename = (p) => p.split(/[\\/]/).pop();
 const dirname = (p) => p.replace(/[\\/][^\\/]*$/, "");
-const docName = () => (state.filePath ? basename(state.filePath) : "제목 없음");
+const docName = () => (state.filePath ? basename(state.filePath) : t("untitled"));
 
 function storageGet(key) {
   try {
@@ -92,13 +93,13 @@ function createEditor(value) {
     const dark = isDark();
     state.vditor = new Vditor("vditor", {
       cdn: VDITOR_CDN,
-      lang: "ko_KR",
+      lang: getLang() === "en" ? "en_US" : "ko_KR",
       mode: state.mode,
       value,
       height: "100%",
       width: "100%",
       theme: dark ? "dark" : "classic",
-      placeholder: "여기에 입력하세요…",
+      placeholder: t("placeholder"),
       // 서식 명령용 툴바 (화면에는 CSS 로 숨김)
       toolbar: TOOLBAR_ITEMS,
       toolbarConfig: { hide: true },
@@ -201,25 +202,25 @@ function applyTheme() {
 /* ---------------- 상태 표시 ---------------- */
 
 function updateTitle() {
-  const title = `${state.dirty ? "● " : ""}${docName()} - 글담`;
+  const title = `${state.dirty ? "● " : ""}${docName()} - ${t("app")}`;
   document.title = title;
   appWindow?.setTitle(title).catch(() => {});
-  $("status-path").textContent = state.filePath ?? "새 문서";
+  $("status-path").textContent = state.filePath ?? t("newDocStatus");
   $("status-path").title = state.filePath ?? "";
-  $("status-dirty").textContent = state.dirty ? "● 저장 안 됨" : "";
-  $("status-mode").textContent = state.mode === "ir" ? "IR" : "원문";
+  $("status-dirty").textContent = state.dirty ? t("unsaved") : "";
+  $("status-mode").textContent = state.mode === "ir" ? t("modeIR") : t("modeSource");
   highlightActive();
 }
 
 function updateCount() {
   const text = getValue();
-  $("status-count").textContent = `${text.replace(/\s/g, "").length.toLocaleString()}자`;
+  $("status-count").textContent = t("chars", { n: text.replace(/\s/g, "").length.toLocaleString() });
 }
 
 async function showError(err) {
   const msg = typeof err === "string" ? err : (err?.message ?? String(err));
   console.error(err);
-  if (isTauri()) await message(msg, { title: "글담", kind: "error" });
+  if (isTauri()) await message(msg, { title: t("app"), kind: "error" });
   else alert(msg);
 }
 
@@ -228,12 +229,12 @@ async function showError(err) {
 /** 저장되지 않은 변경이 있으면 묻는다. 계속 진행해도 되면 true. */
 async function confirmDiscard() {
   if (!refreshDirty()) return true;
-  const SAVE = "저장";
-  const DISCARD = "저장 안 함";
-  const answer = await message(`'${docName()}'의 변경 내용을 저장할까요?\n저장하지 않으면 변경 내용이 사라집니다.`, {
-    title: "글담",
+  const SAVE = t("btnSave");
+  const DISCARD = t("btnDiscard");
+  const answer = await message(t("confirmSave", { name: docName() }), {
+    title: t("app"),
     kind: "warning",
-    buttons: { yes: SAVE, no: DISCARD, cancel: "취소" },
+    buttons: { yes: SAVE, no: DISCARD, cancel: t("btnCancel") },
   });
   if (answer === SAVE || answer === "Yes") return await saveFile();
   if (answer === DISCARD || answer === "No") return true;
@@ -264,13 +265,13 @@ async function newDocument() {
   const size = await appWindow.innerSize().then((s) => s.toLogical(window.devicePixelRatio)).catch(() => null);
   const win = new WebviewWindow(`doc-${Date.now()}`, {
     url: "index.html",
-    title: "글담",
+    title: t("app"),
     width: size?.width ?? 825,
     height: size?.height ?? 760,
     minWidth: 480,
     minHeight: 320,
   });
-  win.once("tauri://error", (e) => showError(`새 창을 열 수 없습니다: ${e.payload}`));
+  win.once("tauri://error", (e) => showError(t("newWindowError", { e: e.payload })));
 }
 
 async function loadFile(path) {
@@ -293,7 +294,7 @@ async function openFile() {
   const path = await openDialog({
     multiple: false,
     directory: false,
-    filters: MD_FILTERS,
+    filters: mdFilters(),
     defaultPath: state.filePath ? dirname(state.filePath) : (state.folder ?? undefined),
   });
   if (path) await loadFile(path);
@@ -322,9 +323,9 @@ async function saveFile() {
 
 async function saveFileAs() {
   const base = state.filePath ? dirname(state.filePath) : state.folder;
-  const name = state.filePath ? basename(state.filePath) : "제목 없음.md";
+  const name = state.filePath ? basename(state.filePath) : `${t("untitled")}.md`;
   let path = await saveDialog({
-    filters: MD_FILTERS,
+    filters: mdFilters(),
     defaultPath: base ? `${base}${base.includes("\\") ? "\\" : "/"}${name}` : name,
   });
   if (!path) return false;
@@ -343,7 +344,7 @@ async function saveFileAs() {
 async function printDocument() {
   const markdown = getValue();
   if (markdown.trim() === "") {
-    await message("인쇄할 내용이 없습니다.", { title: "글담", kind: "info" });
+    await message(t("nothingToPrint"), { title: t("app"), kind: "info" });
     return;
   }
   await renderPrintArea(markdown);
@@ -380,21 +381,14 @@ async function renderPrintArea(markdown) {
 
 /* ---------------- 내보내기 ---------------- */
 
-const EXPORTS = {
-  pdf: { ext: "pdf", label: "PDF" },
-  html: { ext: "html", label: "HTML" },
-  image: { ext: "png", label: "PNG 이미지" },
-  docx: { ext: "docx", label: "Word 문서" },
-  rtf: { ext: "rtf", label: "RTF 문서" },
-  txt: { ext: "txt", label: "텍스트" },
-};
+const EXPORT_EXT = { pdf: "pdf", html: "html", image: "png", docx: "docx", rtf: "rtf", txt: "txt" };
 
 /** 파일 → 내보내기. 문서와 같은 폴더·같은 이름을 기본값으로 묻는다. */
 async function exportDocument(kind) {
-  const spec = EXPORTS[kind];
+  const spec = { ext: EXPORT_EXT[kind], label: t(`export.${kind}`) };
   const markdown = getValue();
   if (markdown.trim() === "") {
-    await message("내보낼 내용이 없습니다.", { title: "글담", kind: "info" });
+    await message(t("nothingToExport"), { title: t("app"), kind: "info" });
     return;
   }
   const name = `${docName().replace(/\.[^.]+$/, "")}.${spec.ext}`;
@@ -406,7 +400,7 @@ async function exportDocument(kind) {
   if (!path) return;
   if (!path.toLowerCase().endsWith(`.${spec.ext}`)) path += `.${spec.ext}`;
 
-  $("status-dirty").textContent = `${spec.label}(으)로 내보내는 중…`;
+  $("status-dirty").textContent = t("exporting", { label: spec.label });
   try {
     if (kind === "docx" || kind === "rtf" || kind === "txt") {
       const body = await markdownToDom(Vditor, markdown, VDITOR_CDN);
@@ -433,7 +427,7 @@ async function exportDocument(kind) {
   } finally {
     updateTitle();
   }
-  await message(`내보냈습니다.\n${path}`, { title: "글담", kind: "info" });
+  await message(t("exported", { path }), { title: t("app"), kind: "info" });
 }
 
 function finishPrint() {
@@ -482,7 +476,7 @@ function renderOutline() {
   const box = $("outline");
   box.textContent = "";
   if (outlineHeadings.length === 0) {
-    box.innerHTML = `<div class="outline-empty">제목이 없습니다.<br />'# 제목' 형식으로 쓰면 여기에 표시됩니다.</div>`;
+    box.innerHTML = `<div class="outline-empty">${t("outlineEmpty")}</div>`;
     return;
   }
   const top = Math.min(...outlineHeadings.map((h) => h.level));
@@ -549,20 +543,21 @@ async function refreshTree() {
 }
 
 function renderTree(root) {
+  state.treeRoot = root; // 언어를 바꿀 때 다시 그리기 위해 남겨 둔다
   const treeEl = $("tree");
   const footer = $("folder-footer");
   treeEl.innerHTML = "";
   if (!root) {
-    footer.textContent = "폴더 열기...";
-    footer.title = "폴더 열기 (Ctrl+Shift+O)";
-    treeEl.innerHTML = `<div class="tree-empty">열린 폴더가 없음.</div>`;
+    footer.textContent = t("openFolderButton");
+    footer.title = t("openFolderTip");
+    treeEl.innerHTML = `<div class="tree-empty">${t("noFolder")}</div>`;
     return;
   }
   // 아래쪽 폴더 이름을 누르면 다른 폴더를 연다.
   footer.textContent = `📁 ${root.name}`;
-  footer.title = `${root.path}\n클릭하면 다른 폴더를 엽니다 (Ctrl+Shift+O)`;
+  footer.title = t("folderTip", { path: root.path });
   if (root.children.length === 0) {
-    treeEl.innerHTML = `<div class="tree-empty"><p>.md 파일이 없습니다.</p></div>`;
+    treeEl.innerHTML = `<div class="tree-empty"><p>${t("noMarkdown")}</p></div>`;
     return;
   }
   treeEl.appendChild(buildList(root.children, 0));
@@ -665,7 +660,7 @@ async function insertImage() {
   const file = await openDialog({
     multiple: false,
     directory: false,
-    filters: [{ name: "이미지", extensions: IMAGE_EXTS }],
+    filters: [{ name: t("images"), extensions: IMAGE_EXTS }],
     defaultPath: state.filePath ? dirname(state.filePath) : (state.folder ?? undefined),
   });
   if (!file) return;
@@ -791,30 +786,84 @@ async function toggleFullscreen() {
   await appWindow.setFullscreen(!(await appWindow.isFullscreen()));
 }
 
-const SHORTCUTS = `파일
-  Ctrl+N\t새 문서 (새 창)
-  Ctrl+O\t열기
-  Ctrl+Shift+O\t폴더 열기
-  Ctrl+S\t저장
-  Ctrl+Shift+S\t다른 이름으로 저장
-  Ctrl+P\t인쇄
-
-보기
-  Ctrl+/\tIR ↔ 원문 모드
-  Ctrl+\\\t사이드바 보이기/숨기기
-  F11\t전체 화면
-
-편집
-  Ctrl+Z / Ctrl+Y\t실행 취소 / 다시 실행
-  Ctrl+B / Ctrl+I\t굵게 / 기울임`;
-
 async function showShortcuts() {
-  await message(SHORTCUTS, { title: "단축키 목록", kind: "info" });
+  await message(t("shortcuts"), { title: t("shortcutsTitle"), kind: "info" });
 }
 
 async function showAbout() {
   const version = await getVersion().catch(() => "");
-  await message(`글담 ${version}\n\nTypora 스타일 마크다운 편집기\nTauri · Vditor 기반`, { title: "글담 정보", kind: "info" });
+  await message(t("about", { version }), { title: t("aboutTitle"), kind: "info" });
+}
+
+/* ---------------- 메뉴 · 언어 ---------------- */
+
+/** 창 메뉴줄을 (다시) 만든다. 언어를 바꿀 때도 부른다. */
+async function buildMenu() {
+  if (!appWindow) return;
+  try {
+    state.menu = await installMenu(appWindow, {
+      newDocument: () => actions.newDocument(),
+      openFile: () => actions.openFile(),
+      openFolder: () => actions.openFolder(),
+      save: () => actions.save(),
+      saveAs: () => actions.saveAs(),
+      print: () => actions.print(),
+      exportAs: (kind) => actions.exportAs(kind),
+      close: () => appWindow.close(),
+      toggleSidebar: () => actions.toggleSidebar(),
+      toggleMode: () => actions.toggleMode(),
+      refreshTree: () => refreshTree(),
+      toggleFullscreen: () => actions.toggleFullscreen(),
+      setTheme: (pref) => setTheme(pref),
+      setLanguage: (lang) => actions.setLanguage(lang),
+      showShortcuts: () => exclusive(showShortcuts)(),
+      showAbout: () => exclusive(showAbout)(),
+      ...formats,
+    }, {
+      sidebar: !$("app").classList.contains("sidebar-hidden"),
+      source: state.mode === "sv",
+      theme: themePref(),
+      lang: getLang(),
+    });
+  } catch (err) {
+    console.error("menu", err);
+  }
+}
+
+/** index.html 에 고정된 글자들 (data-i18n, data-i18n-title) */
+function applyStaticTexts() {
+  document.documentElement.lang = getLang();
+  for (const el of document.querySelectorAll("[data-i18n]")) el.textContent = t(el.dataset.i18n);
+  for (const el of document.querySelectorAll("[data-i18n-title]")) el.title = t(el.dataset.i18nTitle);
+}
+
+/** 보기 → 언어. 고른 언어를 저장하고 이 창에 적용한다. (다른 창은 storage 이벤트로 따라온다) */
+async function setLanguage(lang) {
+  if (lang === getLang()) {
+    await buildMenu(); // 체크 표시만 맞춘다
+    return;
+  }
+  setLang(lang);
+  await applyLanguage();
+}
+
+/** 현재 언어로 화면 전체를 다시 쓴다. 편집기는 내용과 '저장 안 됨' 상태를 유지한 채 다시 만든다. */
+async function applyLanguage() {
+  applyStaticTexts();
+  await buildMenu();
+  applyTheme();
+  tableTools?.relabel();
+  if (state.vditor) {
+    const value = getValue();
+    const wasDirty = state.dirty;
+    await createEditor(value);
+    if (!wasDirty) state.savedContent = getValue();
+    else state.dirty = computeDirty();
+  }
+  renderTree(state.treeRoot ?? null);
+  renderOutline();
+  updateTitle();
+  updateCount();
 }
 
 /* ---------------- 이벤트 ---------------- */
@@ -831,6 +880,7 @@ const actions = {
   exportAs: exclusive(exportDocument),
   toggleSidebar,
   toggleFullscreen,
+  setLanguage: exclusive(setLanguage),
 };
 
 function openMenu(key) {
@@ -954,7 +1004,11 @@ function bindEvents() {
   window.addEventListener("keydown", onKeyDown, true);
   darkQuery.addEventListener("change", () => themePref() === "system" && applyTheme());
   // 다른 창에서 테마를 바꾸면 이 창도 따라간다.
-  window.addEventListener("storage", (e) => e.key === THEME_KEY && applyTheme());
+  window.addEventListener("storage", (e) => {
+    if (e.key === THEME_KEY) applyTheme();
+    // 다른 창에서 언어를 바꾸면 이 창도 따라간다.
+    if (e.key === LANG_KEY && reloadLang()) applyLanguage();
+  });
   window.addEventListener("focus", () => refreshTree());
   $("vditor").addEventListener("input", scheduleInputCheck);
   $("vditor").addEventListener("compositionend", scheduleInputCheck);
@@ -1036,33 +1090,10 @@ async function init() {
   tableTools = installTableTools({ getVditor: () => state.vditor, onChange: () => scheduleInputCheck() });
   showSidebarPanel(storageGet(SIDEBAR_PANEL_KEY));
   bindEvents();
+  applyStaticTexts();
+  renderTree(null);
   if (appWindow) {
-    try {
-      state.menu = await installMenu(appWindow, {
-        newDocument: () => actions.newDocument(),
-        openFile: () => actions.openFile(),
-        openFolder: () => actions.openFolder(),
-        save: () => actions.save(),
-        saveAs: () => actions.saveAs(),
-        print: () => actions.print(),
-        exportAs: (kind) => actions.exportAs(kind),
-        close: () => appWindow.close(),
-        toggleSidebar: () => actions.toggleSidebar(),
-        toggleMode: () => actions.toggleMode(),
-        refreshTree: () => refreshTree(),
-        toggleFullscreen: () => actions.toggleFullscreen(),
-        setTheme: (t) => setTheme(t),
-        showShortcuts: () => exclusive(showShortcuts)(),
-        showAbout: () => exclusive(showAbout)(),
-        ...formats,
-      }, {
-        sidebar: !$("app").classList.contains("sidebar-hidden"),
-        source: state.mode === "sv",
-        theme: themePref(),
-      });
-    } catch (err) {
-      console.error("메뉴를 만들 수 없습니다", err);
-    }
+    await buildMenu();
     applyTheme();
   }
   await createEditor("");

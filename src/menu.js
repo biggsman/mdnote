@@ -1,4 +1,5 @@
 import { Menu, Submenu, MenuItem, CheckMenuItem, PredefinedMenuItem } from "@tauri-apps/api/menu";
+import { t } from "./i18n.js";
 
 // 단축키는 main.js 의 keydown 처리기가 담당한다. 메뉴에는 안내용 글자만 붙여서
 // (가속키를 등록하지 않아) 한 번 누르면 두 번 실행되는 일이 없게 한다.
@@ -6,125 +7,134 @@ const label = (text, shortcut) => (shortcut ? `${text}\t${shortcut}` : text);
 
 /**
  * 창 위쪽 메뉴줄(파일/편집/본문/서식/보기/테마/도움말)을 만든다.
+ * 언어를 바꾸면 다시 불러서 새 메뉴로 바꾼다.
  * @param {import("@tauri-apps/api/window").Window} win
- * @param {Record<string, () => void>} on  메뉴 항목이 부를 동작
- * @param {{ sidebar: boolean, source: boolean, theme: "system" | "light" | "dark" }} initial
+ * @param {Record<string, (...args: any[]) => void>} on  메뉴 항목이 부를 동작
+ * @param {{ sidebar: boolean, source: boolean, theme: "system" | "light" | "dark", lang: "ko" | "en" }} initial
  */
 export async function installMenu(win, on, initial) {
-  const item = (text, shortcut, action) => MenuItem.new({ text: label(text, shortcut), action });
+  const item = (key, shortcut, action) => MenuItem.new({ text: label(t(key), shortcut), action });
   const sep = () => PredefinedMenuItem.new({ item: "Separator" });
   // 편집 기본 항목(실행 취소·복사 등)은 Windows 가 키 입력을 그대로 편집기에 보내 준다.
-  const edit = (kind, text) => PredefinedMenuItem.new({ item: kind, text });
+  const edit = (kind, key) => PredefinedMenuItem.new({ item: kind, text: t(key) });
 
   const sidebarItem = await CheckMenuItem.new({
-    text: label("사이드바", "Ctrl+\\"),
+    text: label(t("menu.sidebar"), "Ctrl+\\"),
     checked: initial.sidebar,
     action: () => on.toggleSidebar(),
   });
   const sourceItem = await CheckMenuItem.new({
-    text: label("원문 모드", "Ctrl+/"),
+    text: label(t("menu.source"), "Ctrl+/"),
     checked: initial.source,
     action: () => on.toggleMode(),
   });
   const themeItems = {
-    system: await CheckMenuItem.new({ text: "시스템 설정 따르기", checked: initial.theme === "system", action: () => on.setTheme("system") }),
-    light: await CheckMenuItem.new({ text: "밝게", checked: initial.theme === "light", action: () => on.setTheme("light") }),
-    dark: await CheckMenuItem.new({ text: "어둡게", checked: initial.theme === "dark", action: () => on.setTheme("dark") }),
+    system: await CheckMenuItem.new({ text: t("menu.themeSystem"), checked: initial.theme === "system", action: () => on.setTheme("system") }),
+    light: await CheckMenuItem.new({ text: t("menu.themeLight"), checked: initial.theme === "light", action: () => on.setTheme("light") }),
+    dark: await CheckMenuItem.new({ text: t("menu.themeDark"), checked: initial.theme === "dark", action: () => on.setTheme("dark") }),
+  };
+  // 언어 이름은 어느 언어에서나 그 언어로 쓴다.
+  const langItems = {
+    ko: await CheckMenuItem.new({ text: "한국어", checked: initial.lang === "ko", action: () => on.setLanguage("ko") }),
+    en: await CheckMenuItem.new({ text: "English", checked: initial.lang === "en", action: () => on.setLanguage("en") }),
   };
 
   const menu = await Menu.new({
     items: [
       await Submenu.new({
-        text: "파일(&F)",
+        text: t("menu.file"),
         items: [
-          await item("새 문서 (새 창)", "Ctrl+N", on.newDocument),
-          await item("열기...", "Ctrl+O", on.openFile),
-          await item("폴더 열기...", "Ctrl+Shift+O", on.openFolder),
+          await item("menu.newDoc", "Ctrl+N", on.newDocument),
+          await item("menu.open", "Ctrl+O", on.openFile),
+          await item("menu.openFolder", "Ctrl+Shift+O", on.openFolder),
           await sep(),
-          await item("저장", "Ctrl+S", on.save),
-          await item("다른 이름으로 저장...", "Ctrl+Shift+S", on.saveAs),
+          await item("menu.save", "Ctrl+S", on.save),
+          await item("menu.saveAs", "Ctrl+Shift+S", on.saveAs),
           await sep(),
           await Submenu.new({
-            text: "내보내기",
+            text: t("menu.export"),
             items: [
-              await item("PDF", null, () => on.exportAs("pdf")),
-              await item("HTML", null, () => on.exportAs("html")),
-              await item("이미지", null, () => on.exportAs("image")),
+              await MenuItem.new({ text: "PDF", action: () => on.exportAs("pdf") }),
+              await MenuItem.new({ text: "HTML", action: () => on.exportAs("html") }),
+              await item("menu.exportImage", null, () => on.exportAs("image")),
               await sep(),
-              await item("Word (.docx)", null, () => on.exportAs("docx")),
-              await item("RTF", null, () => on.exportAs("rtf")),
-              await item("텍스트 (.txt)", null, () => on.exportAs("txt")),
+              await MenuItem.new({ text: "Word (.docx)", action: () => on.exportAs("docx") }),
+              await MenuItem.new({ text: "RTF", action: () => on.exportAs("rtf") }),
+              await item("menu.exportTxt", null, () => on.exportAs("txt")),
             ],
           }),
-          await item("인쇄...", "Ctrl+P", on.print),
+          await item("menu.print", "Ctrl+P", on.print),
           await sep(),
-          await item("닫기", "Alt+F4", on.close),
+          await item("menu.close", "Alt+F4", on.close),
         ],
       }),
       await Submenu.new({
-        text: "편집(&E)",
+        text: t("menu.edit"),
         items: [
-          await edit("Undo", "실행 취소"),
-          await edit("Redo", "다시 실행"),
+          await edit("Undo", "menu.undo"),
+          await edit("Redo", "menu.redo"),
           await sep(),
-          await edit("Cut", "잘라내기"),
-          await edit("Copy", "복사"),
-          await edit("Paste", "붙여넣기"),
+          await edit("Cut", "menu.cut"),
+          await edit("Copy", "menu.copy"),
+          await edit("Paste", "menu.paste"),
           await sep(),
-          await edit("SelectAll", "모두 선택"),
+          await edit("SelectAll", "menu.selectAll"),
         ],
       }),
       await Submenu.new({
-        text: "본문(&P)",
+        text: t("menu.paragraph"),
         items: [
-          ...(await Promise.all([1, 2, 3, 4, 5, 6].map((n) => item(`제목 ${n}`, `Ctrl+${n}`, () => on.heading(n))))),
-          await item("본문 (제목 해제)", "Ctrl+0", () => on.heading(0)),
+          ...(await Promise.all([1, 2, 3, 4, 5, 6].map((n) =>
+            MenuItem.new({ text: label(t("menu.heading", { n }), `Ctrl+${n}`), action: () => on.heading(n) })))),
+          await item("menu.body", "Ctrl+0", () => on.heading(0)),
           await sep(),
-          await item("표 삽입", "Ctrl+T", on.table),
-          await item("코드 블록", "Ctrl+Shift+K", on.codeBlock),
-          await item("수식 블록", "Ctrl+Shift+M", on.mathBlock),
-          await item("인용", "Ctrl+Shift+Q", on.quote),
+          await item("menu.table", "Ctrl+T", on.table),
+          await item("menu.codeBlock", "Ctrl+Shift+K", on.codeBlock),
+          await item("menu.mathBlock", "Ctrl+Shift+M", on.mathBlock),
+          await item("menu.quote", "Ctrl+Shift+Q", on.quote),
           await sep(),
-          await item("번호 목록", "Ctrl+Shift+[", on.orderedList),
-          await item("글머리 기호 목록", "Ctrl+Shift+]", on.bulletList),
-          await item("할 일 목록", null, on.taskList),
+          await item("menu.ol", "Ctrl+Shift+[", on.orderedList),
+          await item("menu.ul", "Ctrl+Shift+]", on.bulletList),
+          await item("menu.task", null, on.taskList),
           await sep(),
-          await item("구분선", null, on.hr),
+          await item("menu.hr", null, on.hr),
         ],
       }),
       await Submenu.new({
-        text: "서식(&O)",
+        text: t("menu.format"),
         items: [
-          await item("굵게", "Ctrl+B", on.bold),
-          await item("기울임", "Ctrl+I", on.italic),
-          await item("밑줄", "Ctrl+U", on.underline),
-          await item("취소선", "Alt+Shift+5", on.strike),
-          await item("인라인 코드", "Ctrl+Shift+`", on.inlineCode),
+          await item("menu.bold", "Ctrl+B", on.bold),
+          await item("menu.italic", "Ctrl+I", on.italic),
+          await item("menu.underline", "Ctrl+U", on.underline),
+          await item("menu.strike", "Alt+Shift+5", on.strike),
+          await item("menu.inlineCode", "Ctrl+Shift+`", on.inlineCode),
           await sep(),
-          await item("링크", "Ctrl+K", on.link),
-          await item("이미지...", "Ctrl+Shift+I", on.image),
+          await item("menu.link", "Ctrl+K", on.link),
+          await item("menu.image", "Ctrl+Shift+I", on.image),
         ],
       }),
       await Submenu.new({
-        text: "보기(&V)",
+        text: t("menu.view"),
         items: [
           sidebarItem,
           sourceItem,
           await sep(),
-          await item("사이드바 새로 고침", null, on.refreshTree),
-          await item("전체 화면", "F11", on.toggleFullscreen),
+          await item("menu.refresh", null, on.refreshTree),
+          await item("menu.fullscreen", "F11", on.toggleFullscreen),
+          await sep(),
+          await Submenu.new({ text: t("menu.language"), items: [langItems.ko, langItems.en] }),
         ],
       }),
       await Submenu.new({
-        text: "테마(&T)",
+        text: t("menu.theme"),
         items: [themeItems.system, await sep(), themeItems.light, themeItems.dark],
       }),
       await Submenu.new({
-        text: "도움말(&H)",
+        text: t("menu.help"),
         items: [
-          await item("단축키 목록", null, on.showShortcuts),
+          await item("menu.shortcuts", null, on.showShortcuts),
           await sep(),
-          await item("글담 정보", null, on.showAbout),
+          await item("menu.about", null, on.showAbout),
         ],
       }),
     ],
