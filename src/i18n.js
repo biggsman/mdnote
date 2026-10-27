@@ -63,7 +63,7 @@ const STRINGS = {
   Ctrl+Enter\t아래에 행 삽입
   Alt+방향키\t행·열 이동`,
     aboutTitle: "글담 정보",
-    about: "글담 {version}\n\nTypora 스타일 마크다운 편집기\nTauri · Vditor 기반",
+    about: "글담 {version}\n\nTypora 스타일 마크다운 편집기\nTauri · Vditor 기반\n\n만든 사람: biggsman\nhttps://github.com/biggsman",
 
     "menu.file": "파일(&F)",
     "menu.newDoc": "새 문서 (새 창)",
@@ -197,7 +197,7 @@ Table (inside a table)
   Ctrl+Enter\tInsert row below
   Alt+Arrow keys\tMove row / column`,
     aboutTitle: "About Geuldam",
-    about: "Geuldam {version}\n\nA Typora-style Markdown editor\nBuilt with Tauri · Vditor",
+    about: "Geuldam {version}\n\nA Typora-style Markdown editor\nBuilt with Tauri · Vditor\n\nDeveloper: biggsman\nhttps://github.com/biggsman",
 
     "menu.file": "&File",
     "menu.newDoc": "New (New Window)",
