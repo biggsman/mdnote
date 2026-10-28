@@ -1,6 +1,6 @@
 [package]
 name = "geuldam"
-version = "0.6.2"
+version = "0.6.3"
 description = "Typora-style Markdown editor"
 authors = ["Geuldam"]
 edition = "2021"

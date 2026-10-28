@@ -213,11 +213,24 @@ fn open_menu(window: tauri::WebviewWindow, key: String) -> Result<(), String> {
     Ok(())
 }
 
+/// 숨겨진 마우스 포인터를 다시 보이게 한다. (대화상자 앞뒤에서 부른다)
+#[tauri::command]
+fn restore_cursor() {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::UI::WindowsAndMessaging::{LoadCursorW, SetCursor, ShowCursor, IDC_ARROW};
+        while ShowCursor(true) < 0 {}
+        if let Ok(arrow) = LoadCursorW(None, IDC_ARROW) {
+            SetCursor(Some(arrow));
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file, open_menu, write_binary, read_binary, export_pdf])
+        .invoke_handler(tauri::generate_handler![list_md_tree, read_file, write_file, get_startup_file, open_menu, restore_cursor, write_binary, read_binary, export_pdf])
         .run(tauri::generate_context!())
         .expect("글담 실행 중 오류가 발생했습니다");
 }
