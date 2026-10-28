@@ -6,7 +6,18 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getVersion } from "@tauri-apps/api/app";
-import { open as openDialog, save as saveDialog, message } from "@tauri-apps/plugin-dialog";
+import * as dialog from "@tauri-apps/plugin-dialog";
+
+// Ctrl+S 처럼 키로 연 Windows 대화상자에서 마우스 포인터가 숨겨진 채 남아
+// 버튼을 누를 수 없는 일이 있어, 대화상자를 열기 전후로 포인터를 되살린다.
+const showCursor = () => invoke("restore_cursor").catch(() => {});
+const withCursor = (fn) => async (...args) => {
+  await showCursor();
+  try { return await fn(...args); } finally { showCursor(); }
+};
+const openDialog = withCursor(dialog.open);
+const saveDialog = withCursor(dialog.save);
+const message = withCursor(dialog.message);
 import { installMenu } from "./menu.js";
 import { TOOLBAR_ITEMS, applyToolbar, applyHeading, wrapSelection, insertBlock } from "./format.js";
 import { buildHtml, buildPng, markdownToDom, buildDocx, buildRtf, buildText } from "./export.js";
