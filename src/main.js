@@ -321,9 +321,32 @@ async function saveFile() {
   return true;
 }
 
+/** 저장하지 않은 문서의 기본 파일 이름: 본문 첫 문장(없으면 "제목 없음"). */
+function suggestedName() {
+  let fence = null;
+  for (const raw of getValue().split(/\r?\n/)) {
+    const mark = raw.match(/^\s*(```|~~~|\$\$)/)?.[1];
+    if (mark && (!fence || fence === mark)) { fence = fence ? null : mark; continue; }
+    if (fence || /^\s*(<|\|)/.test(raw)) continue;
+    const text = raw
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/^\s*(#{1,6}|>+|[-*+]|\d+[.)])\s*/, "")
+      .replace(/^\[[ xX]\]\s*/, "")
+      .replace(/[*_~`=]+/g, "")
+      .replace(/[\\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!text || /^[-=]+$/.test(text)) continue;
+    const sentence = text.split(/(?<=[.!?。])\s/)[0];
+    return sentence.slice(0, 50).replace(/[. ]+$/, "") || t("untitled");
+  }
+  return t("untitled");
+}
+
 async function saveFileAs() {
   const base = state.filePath ? dirname(state.filePath) : state.folder;
-  const name = state.filePath ? basename(state.filePath) : `${t("untitled")}.md`;
+  const name = state.filePath ? basename(state.filePath) : `${suggestedName()}.md`;
   let path = await saveDialog({
     filters: mdFilters(),
     defaultPath: base ? `${base}${base.includes("\\") ? "\\" : "/"}${name}` : name,
@@ -391,7 +414,7 @@ async function exportDocument(kind) {
     await message(t("nothingToExport"), { title: t("app"), kind: "info" });
     return;
   }
-  const name = `${docName().replace(/\.[^.]+$/, "")}.${spec.ext}`;
+  const name = `${state.filePath ? docName().replace(/\.[^.]+$/, "") : suggestedName()}.${spec.ext}`;
   const base = state.filePath ? dirname(state.filePath) : state.folder;
   let path = await saveDialog({
     filters: [{ name: spec.label, extensions: [spec.ext] }],
